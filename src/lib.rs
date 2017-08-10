@@ -81,8 +81,16 @@ pub fn get_posts<'a>(conn: &PgConnection) -> Vec<Post> {
 		// .limit(5)
 		.load::<Post>(conn)
 		.expect("Error loading posts")
+}
 
+pub fn get_post<'a>(conn: &PgConnection, post_id: i32) -> Post {
+	use self::schema::posts::dsl::*;
 
+	let post = posts.find(post_id)
+		.first::<Post>(conn)
+		.expect("Unable to find post");
+
+	return post
 }
 
 pub fn init_pool() -> Pool {
