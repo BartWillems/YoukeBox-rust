@@ -1,9 +1,15 @@
 #[macro_use] extern crate diesel;
 #[macro_use] extern crate diesel_codegen;
+#[macro_use] extern crate serde_derive;
+
 extern crate dotenv;
-extern crate r2d2_diesel;
 extern crate r2d2;
+extern crate r2d2_diesel;
 extern crate rocket;
+extern crate serde;
+extern crate serde_json;
+// extern crate diesel_demo;
+
 
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
@@ -65,6 +71,18 @@ pub fn create_post<'a>(conn: &PgConnection, title: &'a str, body: &'a str) -> Po
 	diesel::insert(&new_post).into(posts::table)
 		.get_result(conn)
 		.expect("Error saving post")
+}
+
+
+pub fn get_posts<'a>(conn: &PgConnection) -> Vec<Post> {
+	use self::schema::posts::dsl::*;
+
+	posts.filter(published.eq(false))
+		// .limit(5)
+		.load::<Post>(conn)
+		.expect("Error loading posts")
+
+
 }
 
 pub fn init_pool() -> Pool {
