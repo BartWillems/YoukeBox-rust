@@ -24,11 +24,16 @@ fn display_posts(conn: DbConn) -> Json<Vec<Post>> {
 }
 
 #[get("/posts/<id>")]
-fn display_post(conn: DbConn, id: i32) -> Json<Post> {
-	Json(get_post(&conn, id))
+fn display_post(conn: DbConn, id: i32) -> Option<Json<Post>> {
+    let post = get_post(&conn, id);
+
+    match post {
+        Some(post) => return Some(Json(post)),
+        None => return None,
+    }
 }
 
-#[post("/posts/add", format = "application/json", data = "<post>")]
+#[post("/posts", format = "application/json", data = "<post>")]
 fn add_post(conn: DbConn, post: Json<AddPost>) -> Json<Post> {
 	Json(create_post(&conn, &post.title[..], &post.body[..]))
 }

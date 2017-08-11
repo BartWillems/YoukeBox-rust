@@ -8,8 +8,6 @@ extern crate r2d2_diesel;
 extern crate rocket;
 extern crate serde;
 extern crate serde_json;
-// extern crate diesel_demo;
-
 
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
@@ -29,7 +27,7 @@ pub mod models;
 
 pub struct DbConn(pub r2d2::PooledConnection<ConnectionManager<PgConnection>>);
 
-// Retrun a single connection from the db pool
+// Return a single connection from the db pool
 impl<'a, 'r> FromRequest<'a, 'r> for DbConn {
 	type Error = ();
 
@@ -73,9 +71,11 @@ pub fn create_post<'a>(conn: &PgConnection, title: &'a str, body: &'a str) -> Po
 		.expect("Error saving post")
 }
 
-
+/// Get all posts as a vector
 pub fn get_posts<'a>(conn: &PgConnection) -> Vec<Post> {
 	use self::schema::posts::dsl::*;
+
+	// Todo: 
 
 	posts.filter(published.eq(false))
 		// .limit(5)
@@ -83,14 +83,17 @@ pub fn get_posts<'a>(conn: &PgConnection) -> Vec<Post> {
 		.expect("Error loading posts")
 }
 
-pub fn get_post<'a>(conn: &PgConnection, post_id: i32) -> Post {
+/// Get a post by id, returns None when a post is not found
+pub fn get_post<'a>(conn: &PgConnection, post_id: i32) -> Option<Post> {
 	use self::schema::posts::dsl::*;
 
 	let post = posts.find(post_id)
-		.first::<Post>(conn)
-		.expect("Unable to find post");
+		.first::<Post>(conn);
 
-	return post
+	match post {
+		Ok(post) => return Some(post),
+		Err(_) => return None,
+	}
 }
 
 pub fn init_pool() -> Pool {
