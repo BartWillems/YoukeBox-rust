@@ -1,5 +1,6 @@
 #![feature(plugin)]
 #![plugin(rocket_codegen)]
+#![plugin(dotenv_macros)]
 
 extern crate diesel_demo;
 extern crate r2d2;
@@ -9,9 +10,12 @@ extern crate rocket_contrib;
 extern crate serde;
 extern crate serde_json;
 
+use rocket::response::status;
 use rocket_contrib::{Json};
 use self::diesel_demo::*;
 use self::diesel_demo::models::*;
+
+static APPLICATION_URL: &'static str = dotenv!("APPLICATION_URL");
 
 #[get("/")]
 fn index() -> &'static str {
@@ -28,16 +32,17 @@ fn display_post(conn: DbConn, id: i32) -> Option<Json<Post>> {
     let post = get_post(&conn, id);
 
     match post {
-        Some(post) => return Some(Json(post)),
-        None => return None,
+        Some(post)  => return Some(Json(post)),
+        None        => return None,
     }
 }
 
 #[post("/posts", format = "application/json", data = "<post>")]
-fn add_post(conn: DbConn, post: Json<AddPost>) -> Json<Post> {
-	Json(create_post(&conn, &post.title[..], &post.body[..]))
-}
+fn add_post(conn: DbConn, post: Json<AddPost>) -> status::Created<Json<Post>> {
+    let post = create_post(&conn, &post.title[..], &post.body[..]);
 
+    return status::Created(format!("{}/posts/{}", APPLICATION_URL, post.id), Some(Json(post)))
+}
 
 fn main() {
 	rocket::ignite()
