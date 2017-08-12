@@ -1,6 +1,10 @@
+#![feature(plugin)]
+#![plugin(dotenv_macros)]
+
 #[macro_use] extern crate diesel;
 #[macro_use] extern crate diesel_codegen;
 #[macro_use] extern crate serde_derive;
+#[macro_use] extern crate lazy_static;
 
 extern crate dotenv;
 extern crate r2d2;
@@ -8,17 +12,24 @@ extern crate r2d2_diesel;
 extern crate rocket;
 extern crate serde;
 extern crate serde_json;
+extern crate reqwest;
+
 
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use dotenv::dotenv;
 use std::env;
-use self::models::{Post, NewPost};
+use self::models::{Post, NewPost, Video};
 use r2d2_diesel::ConnectionManager;
 use std::ops::Deref;
 use rocket::http::Status;
 use rocket::request::{self, FromRequest};
 use rocket::{Request, State, Outcome};
+// use reqwest::{Error, Response};
+use std::time::SystemTime;
+use std::io::Read;
+
+
 
 type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
@@ -26,6 +37,11 @@ pub mod schema;
 pub mod models;
 
 pub struct DbConn(pub r2d2::PooledConnection<ConnectionManager<PgConnection>>);
+
+lazy_static! {
+	static ref API_KEY: &'static str = dotenv!("YOUTUBE_API_KEY");
+	pub static ref APPLICATION_URL: &'static str = dotenv!("APPLICATION_URL");
+}
 
 // Return a single connection from the db pool
 impl<'a, 'r> FromRequest<'a, 'r> for DbConn {
@@ -93,6 +109,41 @@ pub fn get_post<'a>(conn: &PgConnection, post_id: i32) -> Option<Post> {
 	match post {
 		Ok(post) => return Some(post),
 		Err(_) => return None,
+	}
+}
+
+/// Get all videos as a vector
+pub fn get_playlist<'a>(conn: &PgConnection) -> Vec<Video> {
+	use self::schema::videos::dsl::*;
+
+	videos.filter(played.eq(false))
+		.load::<Video>(conn)
+		.expect("Error loading videos")
+}
+
+pub fn create_video<'a>(conn: &PgConnection, query: &str) -> Option<String> {
+	// use self::schema::videos::dsl::*;
+
+	let url = format!("https://www.googleapis.com/youtube/v3/search?part=snippet&key={}&q={}", *API_KEY, query);
+	let resp = reqwest::get(&url);
+
+	match resp {
+		Ok(mut resp) 	=>  {
+			let mut content = String::new();
+			// let video = Video {
+			// 	id: 4,
+			// 	video_id: query.to_string(),
+			// 	title: "VIdeo title".to_string(),
+			// 	description: Some("Video description".to_string()),
+			// 	played: false,
+			// 	added_on: SystemTime::now(),
+			// 	played_on: None
+			// };
+			resp.read_to_string(&mut content).unwrap();
+			return Some(content)
+		},
+		// return Some(resp),
+		Err(_)		=> return None,
 	}
 }
 
