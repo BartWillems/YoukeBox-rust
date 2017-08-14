@@ -124,7 +124,10 @@ pub fn get_playlist<'a>(conn: &PgConnection) -> Vec<Video> {
 pub fn create_video<'a>(conn: &PgConnection, query: &str) -> Option<String> {
 	// use self::schema::videos::dsl::*;
 
-	let url = format!("https://www.googleapis.com/youtube/v3/search?part=snippet&key={}&q={}", *API_KEY, query);
+	let url = format!(
+		"https://www.googleapis.com/youtube/v3/search?part=id,snippet&maxResults=20&key={}&q={}", 
+		*API_KEY, 
+		query);
 	let resp = reqwest::get(&url);
 
 	match resp {

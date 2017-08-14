@@ -33,7 +33,53 @@ pub struct Video {
     pub video_id: String,
     pub title: String,
     pub description: Option<String>,
+    pub duration: String,
     pub played: bool,
     pub added_on: SystemTime,
     pub played_on: Option<SystemTime>,
 }
+
+
+// Start with the Youtube models
+
+#[allow(non_snake_case)]
+#[derive(Deserialize)]
+pub struct YoutubeVideoId {
+    pub kind: String,
+    pub videoId: String,
+}
+
+#[derive(Deserialize)]
+pub struct YoutubeVideoThumbnail {
+    pub url: String,
+    pub width: i16,
+    pub height: i16,
+}
+
+#[derive(Deserialize)]
+pub struct YoutubeVideoThumbnails {
+    pub default: YoutubeVideoThumbnail,
+    pub medium: YoutubeVideoThumbnail,
+    pub high: YoutubeVideoThumbnail,
+}
+
+#[allow(non_snake_case)]
+#[derive(Deserialize)]
+pub struct YoutubeVideoSnippet {
+    pub publishedAt: String,
+    pub channelId: String,
+    pub title: String,
+    pub description: String,
+    pub thumbnails: YoutubeVideoThumbnails,
+    pub channelTitle: String,
+    pub liveBroadcastContent: String,
+}
+
+#[derive(Deserialize)]
+pub struct YoutubeVideo {
+    pub kind: String,
+    pub etag: String,
+    pub id: YoutubeVideoId,
+    pub snippet: YoutubeVideoSnippet,
+}
+
