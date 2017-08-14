@@ -1,4 +1,5 @@
 use super::schema::posts;
+use super::schema::videos;
 use std::time::SystemTime;
 
 #[derive(Serialize, Deserialize)]
@@ -39,6 +40,16 @@ pub struct Video {
     pub played_on: Option<SystemTime>,
 }
 
+#[derive(Insertable)]
+#[derive(Serialize, Deserialize)]
+#[table_name="videos"]
+pub struct NewVideo {
+    pub video_id: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub duration: String,
+    pub added_on: SystemTime,
+}
 
 // Start with the Youtube models
 
@@ -58,9 +69,9 @@ pub struct YoutubeVideoThumbnail {
 
 #[derive(Deserialize)]
 pub struct YoutubeVideoThumbnails {
-    pub default: YoutubeVideoThumbnail,
-    pub medium: YoutubeVideoThumbnail,
-    pub high: YoutubeVideoThumbnail,
+    pub default: Box<YoutubeVideoThumbnail>,
+    pub medium: Box<YoutubeVideoThumbnail>,
+    pub high: Box<YoutubeVideoThumbnail>,
 }
 
 #[allow(non_snake_case)]
@@ -70,7 +81,7 @@ pub struct YoutubeVideoSnippet {
     pub channelId: String,
     pub title: String,
     pub description: String,
-    pub thumbnails: YoutubeVideoThumbnails,
+    pub thumbnails: Box<YoutubeVideoThumbnails>,
     pub channelTitle: String,
     pub liveBroadcastContent: String,
 }
@@ -79,7 +90,7 @@ pub struct YoutubeVideoSnippet {
 pub struct YoutubeVideo {
     pub kind: String,
     pub etag: String,
-    pub id: YoutubeVideoId,
-    pub snippet: YoutubeVideoSnippet,
+    pub id: Box<YoutubeVideoId>,
+    pub snippet: Box<YoutubeVideoSnippet>,
 }
 

@@ -121,7 +121,7 @@ pub fn get_playlist<'a>(conn: &PgConnection) -> Vec<Video> {
 		.expect("Error loading videos")
 }
 
-pub fn create_video<'a>(conn: &PgConnection, query: &str) -> Option<String> {
+pub fn get_videos<'a>(conn: &PgConnection, query: &str) -> Option<String> {
 	// use self::schema::videos::dsl::*;
 
 	let url = format!(
@@ -145,7 +145,6 @@ pub fn create_video<'a>(conn: &PgConnection, query: &str) -> Option<String> {
 			resp.read_to_string(&mut content).unwrap();
 			return Some(content)
 		},
-		// return Some(resp),
 		Err(_)		=> return None,
 	}
 }
