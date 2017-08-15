@@ -10,25 +10,24 @@ extern crate dotenv;
 extern crate r2d2;
 extern crate r2d2_diesel;
 extern crate rocket;
+extern crate rocket_contrib;
 extern crate serde;
 extern crate serde_json;
 extern crate reqwest;
-
 
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use dotenv::dotenv;
 use std::env;
-use self::models::{Post, NewPost, Video};
+use self::models::{Post, NewPost, Video, NewVideo, YoutubeVideo};
 use r2d2_diesel::ConnectionManager;
 use std::ops::Deref;
 use rocket::http::Status;
 use rocket::request::{self, FromRequest};
 use rocket::{Request, State, Outcome};
-// use reqwest::{Error, Response};
+use rocket_contrib::{Json};
 use std::time::SystemTime;
 use std::io::Read;
-
 
 
 type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
@@ -87,6 +86,23 @@ pub fn create_post<'a>(conn: &PgConnection, title: &'a str, body: &'a str) -> Po
 		.expect("Error saving post")
 }
 
+pub fn create_video<'a>(conn: &PgConnection, youtube_video: Json<YoutubeVideo>) -> Video {
+	use schema::videos;
+
+	let new_video = NewVideo {
+        video_id: youtube_video.id.videoId.to_string(),
+        title: youtube_video.snippet.title.to_string(),
+        description: Some(youtube_video.snippet.description.to_string()),
+        duration: "PT4M13S".to_string(), // TODO: Fetch the duration from the YoutubeApi
+        added_on: SystemTime::now(),
+    };
+
+    diesel::insert(&new_video).into(videos::table)
+    	.get_result(conn)
+    	.expect("Error while inserting the video in the playlist")
+
+}
+
 /// Get all posts as a vector
 pub fn get_posts<'a>(conn: &PgConnection) -> Vec<Post> {
 	use self::schema::posts::dsl::*;
@@ -121,8 +137,7 @@ pub fn get_playlist<'a>(conn: &PgConnection) -> Vec<Video> {
 		.expect("Error loading videos")
 }
 
-pub fn get_videos<'a>(conn: &PgConnection, query: &str) -> Option<String> {
-	// use self::schema::videos::dsl::*;
+pub fn get_videos<'a>(query: &str) -> Option<String> {
 
 	let url = format!(
 		"https://www.googleapis.com/youtube/v3/search?part=id,snippet&maxResults=20&key={}&q={}", 
@@ -133,15 +148,6 @@ pub fn get_videos<'a>(conn: &PgConnection, query: &str) -> Option<String> {
 	match resp {
 		Ok(mut resp) 	=>  {
 			let mut content = String::new();
-			// let video = Video {
-			// 	id: 4,
-			// 	video_id: query.to_string(),
-			// 	title: "VIdeo title".to_string(),
-			// 	description: Some("Video description".to_string()),
-			// 	played: false,
-			// 	added_on: SystemTime::now(),
-			// 	played_on: None
-			// };
 			resp.read_to_string(&mut content).unwrap();
 			return Some(content)
 		},
