@@ -86,6 +86,10 @@ pub fn create_post<'a>(conn: &PgConnection, title: &'a str, body: &'a str) -> Po
 		.expect("Error saving post")
 }
 
+
+/// Takes a string of youtube video id's seperated by a comma
+/// eg: ssxNqBPRL6Y,_wy4tuFEpz0,...
+/// Those videos will be searched on youtube and added to the videos db table
 pub fn create_video<'a>(conn: &PgConnection, video_id: String) -> Vec<Video> {
 	use schema::videos;
 
