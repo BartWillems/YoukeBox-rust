@@ -19,13 +19,12 @@ use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use dotenv::dotenv;
 use std::env;
-use self::models::{Post, NewPost, Video, NewVideo, YoutubeVideo};
+use self::models::{Post, NewPost, Video, NewVideo, YoutubeVideos, YoutubeVideosDetailed};
 use r2d2_diesel::ConnectionManager;
 use std::ops::Deref;
 use rocket::http::Status;
 use rocket::request::{self, FromRequest};
 use rocket::{Request, State, Outcome};
-use rocket_contrib::{Json};
 use std::time::SystemTime;
 use std::io::Read;
 
@@ -39,6 +38,7 @@ pub struct DbConn(pub r2d2::PooledConnection<ConnectionManager<PgConnection>>);
 
 lazy_static! {
 	static ref API_KEY: &'static str = dotenv!("YOUTUBE_API_KEY");
+	static ref API_URL: &'static str = "https://www.googleapis.com/youtube/v3";
 	pub static ref APPLICATION_URL: &'static str = dotenv!("APPLICATION_URL");
 }
 
@@ -86,19 +86,45 @@ pub fn create_post<'a>(conn: &PgConnection, title: &'a str, body: &'a str) -> Po
 		.expect("Error saving post")
 }
 
-pub fn create_video<'a>(conn: &PgConnection, youtube_video: Json<YoutubeVideo>) -> Video {
+pub fn create_video<'a>(conn: &PgConnection, video_id: String) -> Vec<Video> {
 	use schema::videos;
 
-	let new_video = NewVideo {
-        video_id: youtube_video.id.videoId.to_string(),
-        title: youtube_video.snippet.title.to_string(),
-        description: Some(youtube_video.snippet.description.to_string()),
-        duration: "PT4M13S".to_string(), // TODO: Fetch the duration from the YoutubeApi
-        added_on: SystemTime::now(),
-    };
+	let mut videos: Vec<NewVideo> = Vec::new();
 
-    diesel::insert(&new_video).into(videos::table)
-    	.get_result(conn)
+	let url = format!(
+		"{}/videos?id={}&part=id,snippet,contentDetails&key={}", 
+		*API_URL,
+		video_id,
+		*API_KEY
+	);
+
+	let resp = reqwest::get(&url);
+	let mut content;
+
+	match resp {
+		Ok(mut resp) => {
+			content = String::new();
+			resp.read_to_string(&mut content).unwrap();
+		},
+		Err(_) => content = String::new(),
+	}
+
+	let result: YoutubeVideosDetailed = serde_json::from_str(&content).unwrap();
+
+	for youtube_video in *result.items {
+		let new_video = NewVideo {
+			video_id: youtube_video.id.to_string(),
+			title: youtube_video.snippet.title.to_string(),
+			description: Some(youtube_video.snippet.description.to_string()),
+			duration: youtube_video.contentDetails.duration.to_string(),
+			added_on: SystemTime::now(),
+		};
+
+		videos.push(new_video);
+	}
+
+    diesel::insert(&videos).into(videos::table)
+    	.get_results(conn)
     	.expect("Error while inserting the video in the playlist")
 
 }
@@ -140,18 +166,49 @@ pub fn get_playlist<'a>(conn: &PgConnection) -> Vec<Video> {
 pub fn get_videos<'a>(query: &str) -> Option<String> {
 
 	let url = format!(
-		"https://www.googleapis.com/youtube/v3/search?part=id,snippet&maxResults=20&key={}&q={}", 
+		"{}/search?type=video&part=id,snippet&maxResults=20&key={}&q={}&videoCategoryId=10", 
+		*API_URL,
 		*API_KEY, 
 		query);
 	let resp = reqwest::get(&url);
 
 	match resp {
-		Ok(mut resp) 	=>  {
+		Ok(mut resp) => {
+			let mut content = String::new();
+			resp.read_to_string(&mut content).unwrap();
+			return get_video_durations(Some(content))
+		},
+		Err(_)	=> return None,
+	}
+}
+
+pub fn get_video_durations<'a>(json_videos: Option<String>) -> Option<String> {
+	let videos;
+	let mut url: String = format!("{}/videos?id=", *API_URL).to_string();
+
+	match json_videos {
+		Some(json_videos) => {
+			videos = Some(json_videos).unwrap();
+		},
+		None => return None
+	}
+
+	let result: YoutubeVideos = serde_json::from_str(&videos).unwrap();
+
+	for youtube_video in *result.items {
+		url = format!("{},{}", url, youtube_video.id.videoId);
+	}
+
+	url = format!("{}&part=id,snippet,contentDetails&key={}", url, *API_KEY);
+	let resp = reqwest::get(&url);
+
+	match resp {
+		Ok(mut resp) => {
 			let mut content = String::new();
 			resp.read_to_string(&mut content).unwrap();
 			return Some(content)
 		},
-		Err(_)		=> return None,
+		Err(_)	=> return None,
 	}
 }
 

@@ -25,9 +25,9 @@ fn show_playlist(conn: DbConn) -> Json<Vec<Video>> {
     Json(get_playlist(&conn))
 }
 
-#[post("/playlist", format = "application/json", data = "<youtube_video>")]
-fn add_video(conn: DbConn, youtube_video: Json<YoutubeVideo>) -> status::Created<Json<Video>> {
-    return status::Created("".to_string(), Some(Json(create_video(&conn, youtube_video))))
+#[post("/playlist", data = "<video_id>")]
+fn add_video(conn: DbConn, video_id: String) -> status::Created<Json<Vec<Video>>> {
+    return status::Created("".to_string(), Some(Json(create_video(&conn, video_id))))
 }
 
 #[get("/youtube/<query>")]

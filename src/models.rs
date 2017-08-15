@@ -70,8 +70,16 @@ pub struct YoutubeVideoThumbnail {
 #[derive(Deserialize)]
 pub struct YoutubeVideoThumbnails {
     pub default: Box<YoutubeVideoThumbnail>,
-    pub medium: Box<YoutubeVideoThumbnail>,
-    pub high: Box<YoutubeVideoThumbnail>,
+    pub medium: Box<Option<YoutubeVideoThumbnail>>,
+    pub high: Box<Option<YoutubeVideoThumbnail>>,
+    pub standard: Box<Option<YoutubeVideoThumbnail>>,
+    pub maxres: Box<Option<YoutubeVideoThumbnail>>,
+}
+
+#[derive(Deserialize)]
+pub struct Localized {
+    pub title: String,
+    pub description: String,
 }
 
 #[allow(non_snake_case)]
@@ -83,14 +91,74 @@ pub struct YoutubeVideoSnippet {
     pub description: String,
     pub thumbnails: Box<YoutubeVideoThumbnails>,
     pub channelTitle: String,
+    pub tags: Option<Vec<String>>,
+    pub categoryId: Option<String>,
     pub liveBroadcastContent: String,
+    pub defaultLanguage: Option<String>,
+    pub localized: Box<Option<Localized>>,
+    pub defaultAudioLanguage: Option<String>,
 }
 
+#[allow(non_snake_case)]
 #[derive(Deserialize)]
 pub struct YoutubeVideo {
     pub kind: String,
     pub etag: String,
     pub id: Box<YoutubeVideoId>,
     pub snippet: Box<YoutubeVideoSnippet>,
+    pub ContentDetails: Box<Option<ContentDetails>>,
 }
 
+#[allow(non_snake_case)]
+#[derive(Deserialize)]
+pub struct YoutubeVideoDetailed {
+    pub kind: String,
+    pub etag: String,
+    pub id: String,
+    pub snippet: Box<YoutubeVideoSnippet>,
+    pub contentDetails: Box<ContentDetails>,
+}
+
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize)]
+pub struct ContentDetails {
+    pub duration: String,
+    pub dimension: Option<String>,
+    pub definition: Option<String>,
+    pub caption: Option<String>,
+    pub licensedContent: Option<bool>,
+    pub regionRestriction: Option<String>,
+    pub projection: String,
+    pub contentRating: Option<String>,
+    pub hasCustomThumbnail: Option<bool>,
+}
+
+#[allow(non_snake_case)]
+#[derive(Deserialize)]
+pub struct PageInfo {
+    pub totalResults: u32,
+    pub resultsPerPage: u8,
+}
+
+// This is the full result from the youtube search api
+#[allow(non_snake_case)]
+#[derive(Deserialize)]
+pub struct YoutubeVideos {
+    pub kind: String,
+    pub etag: String,
+    pub nextPageToken: Option<String>,
+    pub regionCode: Option<String>,
+    pub pageInfo: Box<Option<PageInfo>>,
+    pub items: Box<Vec<YoutubeVideo>>,
+}
+
+#[allow(non_snake_case)]
+#[derive(Deserialize)]
+pub struct YoutubeVideosDetailed {
+    pub kind: String,
+    pub etag: String,
+    pub nextPageToken: Option<String>,
+    pub regionCode: Option<String>,
+    pub pageInfo: Box<PageInfo>,
+    pub items: Box<Vec<YoutubeVideoDetailed>>,
+}
