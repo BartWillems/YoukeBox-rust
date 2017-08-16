@@ -19,7 +19,7 @@ use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use dotenv::dotenv;
 use std::env;
-use self::models::{Post, NewPost, Video, NewVideo, YoutubeVideos, YoutubeVideosDetailed};
+use self::models::{Video, NewVideo, YoutubeVideos, YoutubeVideosDetailed};
 use r2d2_diesel::ConnectionManager;
 use std::ops::Deref;
 use rocket::http::Status;
@@ -73,19 +73,6 @@ pub fn establish_connection() -> PgConnection {
 		.expect(&format!("Error connecting to {}", database_url))
 }
 
-pub fn create_post<'a>(conn: &PgConnection, title: &'a str, body: &'a str) -> Post {
-	use schema::posts;
-
-	let new_post = NewPost {
-		title: title,
-		body: body,
-	};
-
-	diesel::insert(&new_post).into(posts::table)
-		.get_result(conn)
-		.expect("Error saving post")
-}
-
 /// Fetches the current video from the playlist and waits for the duration of the video
 /// Afterwards it updates the database and marks the video as played.
 pub fn play_current_video<'a>(conn: &PgConnection) -> bool {
@@ -98,12 +85,17 @@ pub fn play_current_video<'a>(conn: &PgConnection) -> bool {
 		Ok(video) => {
 			let video_duration = time::Duration::from_secs(duration_to_seconds(&video.duration));
 
+			diesel::update(&video)
+				.set(played_on.eq(SystemTime::now()))
+				.execute(conn)
+				.expect("Unable to start playing the current video.");
+
 			// Wait until the video is played
 			thread::sleep(video_duration);
 
 			// Mark the video as played
 			diesel::update(&video)
-				.set(played.eq(false))
+				.set(played.eq(true))
 				.execute(conn)
 				.expect("Unable to mark the current video as played.");
 
@@ -161,36 +153,12 @@ pub fn create_video<'a>(conn: &PgConnection, video_id: Vec<String>) -> Vec<Video
 
 }
 
-/// Get all posts as a vector
-pub fn get_posts<'a>(conn: &PgConnection) -> Vec<Post> {
-	use self::schema::posts::dsl::*;
-
-	// Todo: 
-
-	posts.filter(published.eq(false))
-		// .limit(5)
-		.load::<Post>(conn)
-		.expect("Error loading posts")
-}
-
-/// Get a post by id, returns None when a post is not found
-pub fn get_post<'a>(conn: &PgConnection, post_id: i32) -> Option<Post> {
-	use self::schema::posts::dsl::*;
-
-	let post = posts.find(post_id)
-		.first::<Post>(conn);
-
-	match post {
-		Ok(post) => return Some(post),
-		Err(_) => return None,
-	}
-}
-
 /// Get all videos as a vector
 pub fn get_playlist<'a>(conn: &PgConnection) -> Vec<Video> {
 	use self::schema::videos::dsl::*;
 
 	videos.filter(played.eq(false))
+		.order(id)
 		.load::<Video>(conn)
 		.expect("Error loading videos")
 }

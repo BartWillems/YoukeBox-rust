@@ -1,7 +1,7 @@
 #![feature(plugin)]
 #![plugin(rocket_codegen)]
 
-extern crate diesel_demo;
+extern crate youkebox;
 extern crate r2d2;
 extern crate r2d2_diesel;
 extern crate rocket;
@@ -12,13 +12,9 @@ extern crate serde_json;
 use rocket::response::status;
 use rocket::http::RawStr;
 use rocket_contrib::{Json};
-use self::diesel_demo::*;
-use self::diesel_demo::models::*;
-
-#[get("/")]
-fn index() -> &'static str {
-    "It works!"
-}
+use self::youkebox::*;
+use self::youkebox::models::*;
+use std::{thread, time};
 
 #[get("/playlist")]
 fn show_playlist(conn: DbConn) -> Json<Vec<Video>> {
@@ -41,16 +37,25 @@ fn search_video(query: &RawStr) -> Option<String> {
     }
 }
 
-#[post("/posts", format = "application/json", data = "<post>")]
-fn add_post(conn: DbConn, post: Json<AddPost>) -> status::Created<Json<Post>> {
-    let post = create_post(&conn, &post.title[..], &post.body[..]);
-
-    return status::Created(format!("{}/posts/{}", *APPLICATION_URL, post.id), Some(Json(post)))
-}
-
 fn main() {
+
+    // Start the playlist watching thread
+    thread::spawn(move  || {
+        let mut result;
+        let conn = establish_connection();
+        loop {
+            println!("Started playing video.");
+            result = play_current_video(&conn);
+
+            if ! result {
+                // Wait 1 second before trying to play a new video
+                thread::sleep(time::Duration::from_secs(1));
+            }
+        }
+    });
+
     rocket::ignite()
         .manage(init_pool())
-        .mount("/", routes![index, add_post, show_playlist, search_video, add_video])
+        .mount("/", routes![show_playlist, search_video, add_video])
         .launch();
 }
