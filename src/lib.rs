@@ -28,7 +28,6 @@ use rocket::{Request, State, Outcome};
 use std::time::SystemTime;
 use std::io::Read;
 
-
 type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
 pub mod schema;
@@ -217,12 +216,29 @@ pub fn get_video_durations<'a>(json_videos: Option<String>) -> Option<String> {
 	}
 }
 
+/// Returns a duration string as seconds
+/// EG: "PT1H10M10S" -> 4210
+pub fn duration_to_seconds(duration: String) -> i32 {
+	let v: Vec<&str> = duration.split(|c: char| !c.is_numeric()).collect();
+	let mut index: u32 = 0;
+	let mut tmp: i32 = 0;
+
+	for i in (0..v.len()).rev() {
+		if ! v[i].is_empty() {
+			tmp += v[i].parse::<i32>().unwrap() * (60i32.pow(index));
+			index += 1;
+		}
+	}
+
+	return tmp
+}
+
 pub fn init_pool() -> Pool {
 	dotenv().ok();
 
 	let database_url = env::var("DATABASE_URL")
-
 		.expect("DATABASE_URL must be set");
+
 	let config = r2d2::Config::default();
 	let manager = ConnectionManager::<PgConnection>::new(database_url);
 	r2d2::Pool::new(config, manager).expect("db pool")
