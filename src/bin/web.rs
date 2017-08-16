@@ -11,7 +11,7 @@ extern crate serde_json;
 
 use rocket::response::status;
 use rocket::http::RawStr;
-use rocket_contrib::{Json};
+use rocket_contrib::Json;
 use self::youkebox::*;
 use self::youkebox::models::*;
 use std::{thread, time};
@@ -37,14 +37,20 @@ fn search_video(query: &RawStr) -> Option<String> {
     }
 }
 
-fn main() {
+#[error(404)]
+fn not_found() -> Json<Error> {
+    Json(Error{
+        status: 404,
+        message: "The requested resource was not found".to_string(),
+    })
+}
 
+fn main() {
     // Start the playlist watching thread
     thread::spawn(move  || {
         let mut result;
         let conn = establish_connection();
         loop {
-            println!("Started playing video.");
             result = play_current_video(&conn);
 
             if ! result {
@@ -56,6 +62,7 @@ fn main() {
 
     rocket::ignite()
         .manage(init_pool())
-        .mount("/", routes![show_playlist, search_video, add_video])
+        .mount("/api", routes![show_playlist, search_video, add_video])
+        .catch(errors![not_found])
         .launch();
 }

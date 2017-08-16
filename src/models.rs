@@ -137,3 +137,9 @@ pub struct YoutubeVideosDetailed {
     pub pageInfo: Box<PageInfo>,
     pub items: Box<Vec<YoutubeVideoDetailed>>,
 }
+
+#[derive(Serialize)]
+pub struct Error {
+    pub status: u16,
+    pub message: String,
+}
