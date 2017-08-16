@@ -25,9 +25,10 @@ fn show_playlist(conn: DbConn) -> Json<Vec<Video>> {
     Json(get_playlist(&conn))
 }
 
-#[post("/playlist", data = "<video_id>")]
-fn add_video(conn: DbConn, video_id: String) -> status::Created<Json<Vec<Video>>> {
-    return status::Created("".to_string(), Some(Json(create_video(&conn, video_id))))
+#[post("/playlist", format = "application/json", data = "<id_list>")]
+fn add_video(conn: DbConn, id_list: String) -> status::Created<Json<Vec<Video>>> {
+    let videos: Vec<String> = serde_json::from_str(&id_list).unwrap();
+    return status::Created("".to_string(), Some(Json(create_video(&conn, videos))))
 }
 
 #[get("/youtube/<query>")]
