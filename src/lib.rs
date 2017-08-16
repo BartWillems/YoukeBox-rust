@@ -96,7 +96,7 @@ pub fn play_current_video<'a>(conn: &PgConnection) -> bool {
 
 	match video {
 		Ok(video) => {
-			let video_duration = time::Duration::from_secs(duration_to_seconds(video.duration.clone()));
+			let video_duration = time::Duration::from_secs(duration_to_seconds(&video.duration));
 
 			// Wait until the video is played
 			thread::sleep(video_duration);
@@ -208,13 +208,13 @@ pub fn get_videos<'a>(query: &str) -> Option<String> {
 		Ok(mut resp) => {
 			let mut content = String::new();
 			resp.read_to_string(&mut content).unwrap();
-			return get_video_durations(Some(content))
+			return get_video_durations(Some(&content))
 		},
 		Err(_)	=> return None,
 	}
 }
 
-pub fn get_video_durations<'a>(json_videos: Option<String>) -> Option<String> {
+pub fn get_video_durations<'a>(json_videos: Option<&String>) -> Option<String> {
 	let videos;
 	let mut url: String = format!("{}/videos?id=", *API_URL).to_string();
 
@@ -246,7 +246,7 @@ pub fn get_video_durations<'a>(json_videos: Option<String>) -> Option<String> {
 
 /// Returns a duration string as seconds
 /// EG: "PT1H10M10S" -> 4210
-pub fn duration_to_seconds(duration: String) -> u64 {
+pub fn duration_to_seconds(duration: &String) -> u64 {
 	let v: Vec<&str> = duration.split(|c: char| !c.is_numeric()).collect();
 	let mut index: u32 = 0;
 	let mut tmp: i32 = 0;
