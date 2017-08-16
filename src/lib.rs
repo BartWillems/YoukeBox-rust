@@ -98,7 +98,10 @@ pub fn play_current_video<'a>(conn: &PgConnection) -> bool {
 		Ok(video) => {
 			let video_duration = time::Duration::from_secs(duration_to_seconds(video.duration.clone()));
 
+			// Wait until the video is played
 			thread::sleep(video_duration);
+
+			// Mark the video as played
 			diesel::update(&video)
 				.set(played.eq(false))
 				.execute(conn)
