@@ -25,6 +25,7 @@ use std::ops::Deref;
 use rocket::http::Status;
 use rocket::request::{self, FromRequest};
 use rocket::{Request, State, Outcome};
+use std::{thread, time};
 use std::time::SystemTime;
 use std::io::Read;
 
@@ -83,6 +84,30 @@ pub fn create_post<'a>(conn: &PgConnection, title: &'a str, body: &'a str) -> Po
 	diesel::insert(&new_post).into(posts::table)
 		.get_result(conn)
 		.expect("Error saving post")
+}
+
+/// Fetches the current video from the playlist and waits for the duration of the video
+/// Afterwards it updates the database and marks the video as played.
+pub fn play_current_video<'a>(conn: &PgConnection) -> bool {
+	use self::schema::videos::dsl::*;
+
+	let video = videos.filter(played.eq(false))
+		.first::<Video>(conn);
+
+	match video {
+		Ok(video) => {
+			let video_duration = time::Duration::from_secs(duration_to_seconds(video.duration.clone()));
+
+			thread::sleep(video_duration);
+			diesel::update(&video)
+				.set(played.eq(false))
+				.execute(conn)
+				.expect("Unable to mark the current video as played.");
+
+			return true
+		},
+		Err(_) => return false,
+	}
 }
 
 
@@ -218,7 +243,7 @@ pub fn get_video_durations<'a>(json_videos: Option<String>) -> Option<String> {
 
 /// Returns a duration string as seconds
 /// EG: "PT1H10M10S" -> 4210
-pub fn duration_to_seconds(duration: String) -> i32 {
+pub fn duration_to_seconds(duration: String) -> u64 {
 	let v: Vec<&str> = duration.split(|c: char| !c.is_numeric()).collect();
 	let mut index: u32 = 0;
 	let mut tmp: i32 = 0;
@@ -230,7 +255,7 @@ pub fn duration_to_seconds(duration: String) -> i32 {
 		}
 	}
 
-	return tmp
+	return tmp as u64
 }
 
 pub fn init_pool() -> Pool {

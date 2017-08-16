@@ -28,7 +28,7 @@ pub struct AddPost {
 
 // Nullable SQL types should be an Option struct
 #[derive(Serialize, Deserialize)]
-#[derive(Queryable)]
+#[derive(Queryable, Identifiable)]
 pub struct Video {
     pub id: i32,
     pub video_id: String,
