@@ -14,20 +14,44 @@ use rocket::http::RawStr;
 use rocket_contrib::Json;
 use self::youkebox::*;
 use self::youkebox::models::*;
-use std::{thread, time};
 
-#[get("/playlist")]
-fn show_playlist(conn: DbConn) -> Json<Vec<Video>> {
-    Json(get_playlist(&conn))
+// Playlist pages
+
+#[get("/api/v1/playlist")]
+fn show_playlist(conn: DbConn) -> Option<Json<Vec<Video>>> {
+    let playlist = get_playlist(&conn, None);
+
+    match playlist {
+        Some(playlist) => return Some(Json(playlist)),
+        None => return None,
+    }
 }
 
-#[post("/playlist", format = "application/json", data = "<id_list>")]
+#[get("/api/v1/playlist/<room>")]
+fn show_room_playlist(conn: DbConn, room: &RawStr) -> Option<Json<Vec<Video>>> {
+    let playlist = get_playlist(&conn, Some(room.to_string()));
+
+    match playlist {
+        Some(playlist) => return Some(Json(playlist)),
+        None => return None,
+    }
+}
+
+#[post("/api/v1/playlist", format = "application/json", data = "<id_list>")]
 fn add_video(conn: DbConn, id_list: String) -> status::Created<Json<Vec<Video>>> {
     let videos: Vec<String> = serde_json::from_str(&id_list).unwrap();
-    return status::Created("".to_string(), Some(Json(create_video(&conn, videos))))
+    return status::Created("".to_string(), Some(Json(create_video(&conn, videos, None))))
 }
 
-#[get("/youtube/<query>")]
+#[post("/api/v1/playlist/<room>", format = "application/json", data = "<id_list>")]
+fn add_video_to_room(conn: DbConn, id_list: String, room: &RawStr) -> status::Created<Json<Vec<Video>>> {
+    let videos: Vec<String> = serde_json::from_str(&id_list).unwrap();
+    return status::Created("".to_string(), Some(Json(create_video(&conn, videos, Some(room.to_string()) ) ) ) )
+}
+
+// Youtube queries
+
+#[get("/api/v1/youtube/<query>")]
 fn search_video(query: &RawStr) -> Option<String> {
     let res = get_videos(query);
 
@@ -37,6 +61,19 @@ fn search_video(query: &RawStr) -> Option<String> {
     }
 }
 
+// Rooms
+#[get("/api/v1/rooms")]
+fn show_rooms(conn: DbConn) -> Json<Vec<Room>> {
+    Json(get_rooms(&conn))
+}
+
+#[post("/api/v1/rooms", format = "application/json", data = "<room>")]
+fn add_room(conn: DbConn, room: Json<NewRoom>) -> Json<Room> {
+    Json(create_room(&conn, room.name.clone()))
+}
+
+// Error pages
+
 #[error(404)]
 fn not_found() -> Json<Error> {
     Json(Error{
@@ -45,24 +82,28 @@ fn not_found() -> Json<Error> {
     })
 }
 
-fn main() {
-    // Start the playlist watching thread
-    thread::spawn(move  || {
-        let mut result;
-        let conn = establish_connection();
-        loop {
-            result = play_current_video(&conn);
+#[error(500)]
+fn internal_error() -> Json<Error> {
+    Json(Error{
+        status: 500,
+        message: "Internal Server Error".to_string(),
+    })
+}
 
-            if ! result {
-                // Wait 1 second before trying to play a new video
-                thread::sleep(time::Duration::from_secs(1));
-            }
-        }
-    });
+fn main() {
+    // Start playing every playlist for every room
+    init_playlist_listener();
 
     rocket::ignite()
         .manage(init_pool())
-        .mount("/api", routes![show_playlist, search_video, add_video])
-        .catch(errors![not_found])
+        .mount("/", routes![
+            show_playlist, 
+            show_room_playlist, 
+            search_video, 
+            add_video, 
+            add_video_to_room,
+            show_rooms,
+            add_room])
+        .catch(errors![not_found, internal_error])
         .launch();
 }

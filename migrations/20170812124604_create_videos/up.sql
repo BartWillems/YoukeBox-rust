@@ -4,6 +4,7 @@ CREATE TABLE videos (
     video_id VARCHAR NOT NULL,
     title VARCHAR NOT NULL,
     description VARCHAR,
+    room VARCHAR DEFAULT NULL,
     duration VARCHAR NOT NULL,
     played BOOLEAN NOT NULL DEFAULT 'f',
     added_on TIMESTAMP NOT NULL DEFAULT now(),

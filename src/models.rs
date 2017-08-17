@@ -1,4 +1,5 @@
 use super::schema::videos;
+use super::schema::rooms;
 use std::time::SystemTime;
 
 // Nullable SQL types should be an Option struct
@@ -9,6 +10,7 @@ pub struct Video {
     pub video_id: String,
     pub title: String,
     pub description: Option<String>,
+    pub room: Option<String>,
     pub duration: String,
     pub played: bool,
     pub added_on: SystemTime,
@@ -22,8 +24,23 @@ pub struct NewVideo {
     pub video_id: String,
     pub title: String,
     pub description: Option<String>,
+    pub room: Option<String>,
     pub duration: String,
     pub added_on: SystemTime,
+}
+
+#[derive(Serialize, Deserialize)]
+#[derive(Queryable, Identifiable)]
+pub struct Room {
+    pub id: i32,
+    pub name: String,
+}
+
+#[derive(Insertable)]
+#[derive(Serialize, Deserialize)]
+#[table_name="rooms"]
+pub struct NewRoom {
+    pub name: String,
 }
 
 // Start with the Youtube models

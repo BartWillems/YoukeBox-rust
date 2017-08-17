@@ -19,7 +19,7 @@ use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use dotenv::dotenv;
 use std::env;
-use self::models::{Video, NewVideo, YoutubeVideos, YoutubeVideosDetailed};
+use self::models::{NewVideo, NewRoom, Video, Room, YoutubeVideos, YoutubeVideosDetailed};
 use r2d2_diesel::ConnectionManager;
 use std::ops::Deref;
 use rocket::http::Status;
@@ -75,11 +75,27 @@ pub fn establish_connection() -> PgConnection {
 
 /// Fetches the current video from the playlist and waits for the duration of the video
 /// Afterwards it updates the database and marks the video as played.
-pub fn play_current_video<'a>(conn: &PgConnection) -> bool {
+pub fn play_current_video<'a>(conn: &PgConnection, room_name: Option<String>) -> bool {
 	use self::schema::videos::dsl::*;
 
-	let video = videos.filter(played.eq(false))
-		.first::<Video>(conn);
+	let video;
+	match room_name {
+		Some(room_name) => {
+			video = videos
+				.filter(played.eq(false))
+				.filter(room.eq(room_name))
+				.order(added_on)
+				.first::<Video>(conn);
+		},
+		None => {
+			video = videos
+				.filter(played.eq(false))
+				.filter(room.is_null())
+				.order(added_on)
+				.first::<Video>(conn);
+		}
+	};
+	
 
 	match video {
 		Ok(video) => {
@@ -89,6 +105,8 @@ pub fn play_current_video<'a>(conn: &PgConnection) -> bool {
 				.set(played_on.eq(SystemTime::now()))
 				.execute(conn)
 				.expect("Unable to start playing the current video.");
+
+			println!("Start playing: '{}' With ID: '{}'", &video.title, &video.id);
 
 			// Wait until the video is played
 			thread::sleep(video_duration);
@@ -102,6 +120,79 @@ pub fn play_current_video<'a>(conn: &PgConnection) -> bool {
 			return true
 		},
 		Err(_) => return false,
+	};
+}
+
+
+/// Start a thread to watch a certain playlist
+pub fn play_video_thread<'a>(room: Option<String>) {
+	thread::spawn(move  || {
+       	let mut result;
+       	let c = establish_connection();
+
+    	println!("Room name: {:?}", room);
+    	loop {
+        	result = play_current_video(&c, room.clone());
+
+        	if ! result {
+        	   	// Wait 1 second before trying to play a new video
+        	    thread::sleep(time::Duration::from_secs(1));
+        	}
+    	}
+    });
+}
+
+
+/// Loop through every room & start playing their playlists
+/// At the end of the loop, start the FFA playlist(room None)
+pub fn init_playlist_listener<'a>() {
+	use self::schema::rooms::dsl::*;
+
+	let conn = establish_connection();
+
+	let result = rooms.load::<Room>(&conn)
+				.expect("Error loading videos");
+
+	for room in result {
+		play_video_thread(Some(room.name));
+	}
+
+	// Also play the FFA room
+	play_video_thread(None);
+}
+
+/// Create a new room
+pub fn create_room<'a>(conn: &PgConnection, room_name: String) -> Room {
+	use schema::rooms;
+
+	let new_room = NewRoom {
+		name: room_name,
+	};
+
+	diesel::insert(&new_room).into(rooms::table)
+		.get_result(conn)
+		.expect("Error while inserting the room.")
+}
+
+/// List all the rooms
+pub fn get_rooms<'a>(conn: &PgConnection) -> Vec<Room> {
+	use self::schema::rooms::dsl::*;
+
+	rooms.order(name)
+		.load::<Room>(conn)
+		.expect("Error while loading the rooms.")
+}
+
+/// Get a single room by name
+pub fn get_room<'a>(conn: &PgConnection, room_name: &String) -> Option<Room> {
+	use self::schema::rooms::dsl::*;
+
+	let room = rooms.filter(name.eq(room_name))
+		.first::<Room>(conn);
+
+	match room {
+		Ok(room) => return Some(room),
+		Err(_)	=> return None,
 	}
 }
 
@@ -109,11 +200,17 @@ pub fn play_current_video<'a>(conn: &PgConnection) -> bool {
 /// Takes a string of youtube video id's seperated by a comma
 /// eg: ssxNqBPRL6Y,_wy4tuFEpz0,...
 /// Those videos will be searched on youtube and added to the videos db table
-pub fn create_video<'a>(conn: &PgConnection, video_id: Vec<String>) -> Vec<Video> {
+pub fn create_video<'a>(conn: &PgConnection, video_id: Vec<String>, room: Option<String>) -> Vec<Video> {
 	use schema::videos;
 
 	let mut videos: Vec<NewVideo> = Vec::new();
 	let id_list = video_id.join(",");
+	
+	let room_name;
+	match room {
+		Some(room) 	=> room_name = Some(room),
+		None 		=> room_name = None,
+	}
 
 	let url = format!(
 		"{}/videos?id={}&part=id,snippet,contentDetails&key={}", 
@@ -140,6 +237,7 @@ pub fn create_video<'a>(conn: &PgConnection, video_id: Vec<String>) -> Vec<Video
 			video_id: youtube_video.id.to_string(),
 			title: youtube_video.snippet.title.to_string(),
 			description: Some(youtube_video.snippet.description.to_string()),
+			room: room_name.clone(),
 			duration: youtube_video.contentDetails.duration.to_string(),
 			added_on: SystemTime::now(),
 		};
@@ -154,15 +252,37 @@ pub fn create_video<'a>(conn: &PgConnection, video_id: Vec<String>) -> Vec<Video
 }
 
 /// Get all videos as a vector
-pub fn get_playlist<'a>(conn: &PgConnection) -> Vec<Video> {
+pub fn get_playlist<'a>(conn: &PgConnection, room_name: Option<String>) -> Option<Vec<Video>> {
 	use self::schema::videos::dsl::*;
 
-	videos.filter(played.eq(false))
-		.order(id)
-		.load::<Video>(conn)
-		.expect("Error loading videos")
+	let query = videos.filter(played.eq(false))
+				.order(id);
+
+	match room_name {
+		Some(room_name) => {
+			let r = get_room(conn, &room_name);
+			match r {
+				Some(_) => {
+					let result = query.filter(room.eq(room_name))
+						.load::<Video>(conn)
+						.expect("Error loading videos");
+					return Some(result)
+
+				},
+				None => return None,
+			}
+		},
+		None => {
+			let result = query.filter(room.is_null())
+				.load::<Video>(conn)
+				.expect("Error loading videos");
+
+			return Some(result)
+		},
+	};
 }
 
+/// Returns a list of videos from Youtube
 pub fn get_videos<'a>(query: &str) -> Option<String> {
 
 	let url = format!(
@@ -182,6 +302,7 @@ pub fn get_videos<'a>(query: &str) -> Option<String> {
 	}
 }
 
+/// Fetches the duration from Youtube for a list of videos
 pub fn get_video_durations<'a>(json_videos: Option<&String>) -> Option<String> {
 	let videos;
 	let mut url: String = format!("{}/videos?id=", *API_URL).to_string();
