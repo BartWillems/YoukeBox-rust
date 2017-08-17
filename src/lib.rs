@@ -106,7 +106,7 @@ pub fn play_current_video<'a>(conn: &PgConnection, room_name: Option<String>) ->
 				.execute(conn)
 				.expect("Unable to start playing the current video.");
 
-			println!("Start playing: '{}' With ID: '{}' and duration: '{}' in room: '{:?}'", 
+			println!("Start playing: [{}] With ID: [{}] and duration: [{}] in room: [{:?}].", 
 				&video.title, 
 				&video.id, 
 				&video.duration,
@@ -114,6 +114,8 @@ pub fn play_current_video<'a>(conn: &PgConnection, room_name: Option<String>) ->
 
 			// Wait until the video is played
 			thread::sleep(video_duration);
+
+			println!("Done playing [{}] from room [{:?}]", &video.title, room_name);
 
 			// Mark the video as played
 			diesel::update(&video)
