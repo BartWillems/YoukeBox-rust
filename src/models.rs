@@ -18,7 +18,7 @@ pub struct Video {
 }
 
 #[derive(Insertable)]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 #[table_name="videos"]
 pub struct NewVideo {
     pub video_id: String,
@@ -34,13 +34,15 @@ pub struct NewVideo {
 pub struct Room {
     pub id: i32,
     pub name: String,
+    pub description: Option<String>,
 }
 
 #[derive(Insertable)]
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 #[table_name="rooms"]
 pub struct NewRoom {
     pub name: String,
+    pub description: Option<String>,
 }
 
 // Start with the Youtube models

@@ -79,11 +79,11 @@ pub fn play_current_video<'a>(conn: &PgConnection, room_name: Option<String>) ->
 	use self::schema::videos::dsl::*;
 
 	let video;
-	match room_name {
+	match room_name.clone() {
 		Some(room_name) => {
 			video = videos
 				.filter(played.eq(false))
-				.filter(room.eq(room_name))
+				.filter(room.eq(room_name.to_lowercase()))
 				.order(added_on)
 				.first::<Video>(conn);
 		},
@@ -106,7 +106,11 @@ pub fn play_current_video<'a>(conn: &PgConnection, room_name: Option<String>) ->
 				.execute(conn)
 				.expect("Unable to start playing the current video.");
 
-			println!("Start playing: '{}' With ID: '{}'", &video.title, &video.id);
+			println!("Start playing: '{}' With ID: '{}' and duration: '{}' in room: '{:?}'", 
+				&video.title, 
+				&video.id, 
+				&video.duration,
+				room_name);
 
 			// Wait until the video is played
 			thread::sleep(video_duration);
@@ -162,16 +166,18 @@ pub fn init_playlist_listener<'a>() {
 }
 
 /// Create a new room
-pub fn create_room<'a>(conn: &PgConnection, room_name: String) -> Room {
+pub fn create_room<'a>(conn: &PgConnection, mut r: NewRoom) -> Room {
 	use schema::rooms;
 
-	let new_room = NewRoom {
-		name: room_name,
-	};
+	r.name = r.name.to_lowercase();
 
-	diesel::insert(&new_room).into(rooms::table)
+	let room = diesel::insert(&r).into(rooms::table)
 		.get_result(conn)
-		.expect("Error while inserting the room.")
+		.expect("Error while inserting the room.");
+
+	play_video_thread(Some(r.name));
+
+	return room;
 }
 
 /// List all the rooms
@@ -187,7 +193,7 @@ pub fn get_rooms<'a>(conn: &PgConnection) -> Vec<Room> {
 pub fn get_room<'a>(conn: &PgConnection, room_name: &String) -> Option<Room> {
 	use self::schema::rooms::dsl::*;
 
-	let room = rooms.filter(name.eq(room_name))
+	let room = rooms.filter(name.eq(room_name.to_lowercase()))
 		.first::<Room>(conn);
 
 	match room {
@@ -208,7 +214,7 @@ pub fn create_video<'a>(conn: &PgConnection, video_id: Vec<String>, room: Option
 	
 	let room_name;
 	match room {
-		Some(room) 	=> room_name = Some(room),
+		Some(room) 	=> room_name = Some(room.to_lowercase()),
 		None 		=> room_name = None,
 	}
 
@@ -263,7 +269,7 @@ pub fn get_playlist<'a>(conn: &PgConnection, room_name: Option<String>) -> Optio
 			let r = get_room(conn, &room_name);
 			match r {
 				Some(_) => {
-					let result = query.filter(room.eq(room_name))
+					let result = query.filter(room.eq(room_name.to_lowercase()))
 						.load::<Video>(conn)
 						.expect("Error loading videos");
 					return Some(result)

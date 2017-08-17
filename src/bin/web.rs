@@ -69,7 +69,7 @@ fn show_rooms(conn: DbConn) -> Json<Vec<Room>> {
 
 #[post("/api/v1/rooms", format = "application/json", data = "<room>")]
 fn add_room(conn: DbConn, room: Json<NewRoom>) -> Json<Room> {
-    Json(create_room(&conn, room.name.clone()))
+    Json(create_room(&conn, room.into_inner() ))
 }
 
 // Error pages
