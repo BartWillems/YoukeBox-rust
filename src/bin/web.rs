@@ -17,7 +17,7 @@ use self::youkebox::models::*;
 
 // Playlist pages
 
-#[get("/api/v1/playlist")]
+#[get("/playlist")]
 fn show_playlist(conn: DbConn) -> Option<Json<Vec<Video>>> {
     let playlist = get_playlist(&conn, None);
 
@@ -27,7 +27,7 @@ fn show_playlist(conn: DbConn) -> Option<Json<Vec<Video>>> {
     }
 }
 
-#[get("/api/v1/playlist/<room>")]
+#[get("/playlist/<room>")]
 fn show_room_playlist(conn: DbConn, room: &RawStr) -> Option<Json<Vec<Video>>> {
     let playlist = get_playlist(&conn, Some(room.to_string()));
 
@@ -37,13 +37,13 @@ fn show_room_playlist(conn: DbConn, room: &RawStr) -> Option<Json<Vec<Video>>> {
     }
 }
 
-#[post("/api/v1/playlist", format = "application/json", data = "<id_list>")]
+#[post("/playlist", format = "application/json", data = "<id_list>")]
 fn add_video(conn: DbConn, id_list: String) -> status::Created<Json<Vec<Video>>> {
     let videos: Vec<String> = serde_json::from_str(&id_list).unwrap();
     return status::Created("".to_string(), Some(Json(create_video(&conn, videos, None))))
 }
 
-#[post("/api/v1/playlist/<room>", format = "application/json", data = "<id_list>")]
+#[post("/playlist/<room>", format = "application/json", data = "<id_list>")]
 fn add_video_to_room(conn: DbConn, id_list: String, room: &RawStr) -> status::Created<Json<Vec<Video>>> {
     let videos: Vec<String> = serde_json::from_str(&id_list).unwrap();
     return status::Created("".to_string(), Some(Json(create_video(&conn, videos, Some(room.to_string()) ) ) ) )
@@ -51,7 +51,7 @@ fn add_video_to_room(conn: DbConn, id_list: String, room: &RawStr) -> status::Cr
 
 // Youtube queries
 
-#[get("/api/v1/youtube/<query>")]
+#[get("/youtube/<query>")]
 fn search_video(query: &RawStr) -> Option<String> {
     let res = get_videos(query);
 
@@ -62,12 +62,12 @@ fn search_video(query: &RawStr) -> Option<String> {
 }
 
 // Rooms
-#[get("/api/v1/rooms")]
+#[get("/rooms")]
 fn show_rooms(conn: DbConn) -> Json<Vec<Room>> {
     Json(get_rooms(&conn))
 }
 
-#[post("/api/v1/rooms", format = "application/json", data = "<room>")]
+#[post("/rooms", format = "application/json", data = "<room>")]
 fn add_room(conn: DbConn, room: Json<NewRoom>) -> Json<Room> {
     Json(create_room(&conn, room.into_inner() ))
 }
@@ -96,7 +96,7 @@ fn main() {
 
     rocket::ignite()
         .manage(init_pool())
-        .mount("/", routes![
+        .mount("/api/v1", routes![
             show_playlist, 
             show_room_playlist, 
             search_video, 
