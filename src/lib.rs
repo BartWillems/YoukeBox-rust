@@ -171,7 +171,7 @@ pub fn init_playlist_listener<'a>() {
 pub fn create_room<'a>(conn: &PgConnection, mut r: NewRoom) -> Room {
 	use schema::rooms;
 
-	r.name = r.name.to_lowercase();
+	r.name = r.name.to_lowercase().replace(" ", "_").trim().to_string();
 
 	let room = diesel::insert(&r).into(rooms::table)
 		.get_result(conn)
@@ -183,12 +183,22 @@ pub fn create_room<'a>(conn: &PgConnection, mut r: NewRoom) -> Room {
 }
 
 /// List all the rooms
-pub fn get_rooms<'a>(conn: &PgConnection) -> Vec<Room> {
+pub fn get_rooms<'a>(conn: &PgConnection, query: Option<String>) -> Vec<Room> {
 	use self::schema::rooms::dsl::*;
 
-	rooms.order(name)
-		.load::<Room>(conn)
-		.expect("Error while loading the rooms.")
+	match query {
+		Some(query) => {
+			rooms.filter(name.like(format!("%{}%", query)))
+				.order(name)
+				.load::<Room>(conn)
+				.expect("Error while loading the rooms.")
+		},
+		None => {
+			rooms.order(name)
+				.load::<Room>(conn)
+				.expect("Error while loading the rooms.")
+		}
+	}
 }
 
 /// Get a single room by name

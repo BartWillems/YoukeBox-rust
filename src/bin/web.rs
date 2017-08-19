@@ -64,7 +64,12 @@ fn search_video(query: &RawStr) -> Option<String> {
 // Rooms
 #[get("/rooms")]
 fn show_rooms(conn: DbConn) -> Json<Vec<Room>> {
-    Json(get_rooms(&conn))
+    Json(get_rooms(&conn, None))
+}
+
+#[get("/rooms/search/<query>")]
+fn show_rooms_query(conn: DbConn, query: &RawStr) -> Json<Vec<Room>> {
+    Json(get_rooms(&conn, Some(query.to_string())))
 }
 
 #[post("/rooms", format = "application/json", data = "<room>")]
@@ -103,6 +108,7 @@ fn main() {
             add_video, 
             add_video_to_room,
             show_rooms,
+            show_rooms_query,
             add_room])
         .catch(errors![not_found, internal_error])
         .launch();
