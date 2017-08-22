@@ -14,6 +14,7 @@ use rocket::http::RawStr;
 use rocket_contrib::Json;
 use self::youkebox::*;
 use self::youkebox::models::*;
+use self::youkebox::player::init_playlist_listener;
 
 // Playlist pages
 
