@@ -2,11 +2,8 @@
 #![plugin(rocket_codegen)]
 
 extern crate youkebox;
-extern crate r2d2;
-extern crate r2d2_diesel;
 extern crate rocket;
 extern crate rocket_contrib;
-extern crate serde;
 extern crate serde_json;
 
 use rocket::response::status;
