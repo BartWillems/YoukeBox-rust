@@ -4,11 +4,14 @@
 extern crate youkebox;
 extern crate rocket;
 extern crate rocket_contrib;
+extern crate rocket_cors;
 extern crate serde_json;
 
+
 use rocket::response::status;
-use rocket::http::RawStr;
+use rocket::http::{Method,RawStr};
 use rocket_contrib::Json;
+use rocket_cors::{AllowedOrigins, AllowedHeaders};
 use self::youkebox::*;
 use self::youkebox::models::*;
 use self::youkebox::player::init_playlist_listener;
@@ -97,6 +100,18 @@ fn main() {
     // Start playing every playlist for every room
     init_playlist_listener();
 
+    // Allow Cross Origin Requests (CORS)
+    // AllowedOrigins::some() returns a tuple, hence the .0 for the first value
+    let allowed_origins = AllowedOrigins::some(&["http://localhost:4200"]).0;
+
+    let options = rocket_cors::Cors {
+        allowed_origins: allowed_origins,
+        allowed_methods: vec![Method::Get].into_iter().map(From::from).collect(),
+        allowed_headers: AllowedHeaders::some(&["Authorization", "Accept"]),
+        allow_credentials: true,
+        ..Default::default()
+    };
+
     rocket::ignite()
         .manage(init_pool())
         .mount("/api/v1", routes![
@@ -109,5 +124,6 @@ fn main() {
             show_rooms_query,
             add_room])
         .catch(errors![not_found, internal_error])
+        .attach(options)
         .launch();
 }
