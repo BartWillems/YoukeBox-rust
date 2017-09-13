@@ -11,7 +11,6 @@ extern crate serde_json;
 use rocket::response::status;
 use rocket::http::{Method,RawStr};
 use rocket_contrib::Json;
-use rocket_cors::{AllowedOrigins, AllowedHeaders};
 use self::youkebox::*;
 use self::youkebox::models::*;
 use self::youkebox::player::init_playlist_listener;
@@ -100,14 +99,9 @@ fn main() {
     // Start playing every playlist for every room
     init_playlist_listener();
 
-    // Allow Cross Origin Requests (CORS)
-    // AllowedOrigins::some() returns a tuple, hence the .0 for the first value
-    let allowed_origins = AllowedOrigins::some(&["http://localhost:4200"]).0;
-
+    // Leave 'allowed_origins' empty because All is the default
     let options = rocket_cors::Cors {
-        allowed_origins: allowed_origins,
-        allowed_methods: vec![Method::Get].into_iter().map(From::from).collect(),
-        allowed_headers: AllowedHeaders::some(&["Authorization", "Accept"]),
+        allowed_methods: vec![Method::Get, Method::Post].into_iter().map(From::from).collect(),
         allow_credentials: true,
         ..Default::default()
     };
