@@ -213,11 +213,12 @@ pub fn get_playlist<'a>(conn: &PgConnection, room_name: Option<String>) -> Playl
 
 // 
 fn set_playlist_timestamp(playlist: Vec<Video>) -> Playlist {
-
     if playlist.len() > 0 {
-        let added_on = playlist[0].added_on;
+        let played_on = playlist[0].played_on;
+        let now = SystemTime::now();
+        let elapsed = now.duration_since(played_on.unwrap());
 
-        match added_on.elapsed() {
+        match elapsed {
             Ok(elapsed) => {
                 return Playlist {
                     videos: playlist,
@@ -225,7 +226,7 @@ fn set_playlist_timestamp(playlist: Vec<Video>) -> Playlist {
                 }
             }
             Err(e) => {
-                println!("Error while calculating the current video duration: {:?}", e);
+                println!("Error: {:?}", e);
                 return Playlist {
                     videos: playlist,
                     timestamp: None
@@ -233,7 +234,6 @@ fn set_playlist_timestamp(playlist: Vec<Video>) -> Playlist {
             }
         }
     }
-
 
     return Playlist {
         videos: playlist,
