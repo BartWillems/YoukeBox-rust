@@ -1,6 +1,8 @@
 #![feature(plugin)]
 #![plugin(dotenv_macros)]
 
+#![recursion_limit="128"]
+
 #[macro_use] extern crate diesel;
 #[macro_use] extern crate diesel_codegen;
 #[macro_use] extern crate serde_derive;
@@ -17,7 +19,7 @@ use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use dotenv::dotenv;
 use std::env;
-use self::models::{NewVideo, NewRoom, Video, Room, YoutubeVideos, YoutubeVideosDetailed};
+use self::models::{NewVideo, NewRoom, Video, Playlist, Room, YoutubeVideos, YoutubeVideosDetailed};
 use self::player::*;
 use r2d2_diesel::ConnectionManager;
 use std::ops::Deref;
@@ -175,7 +177,7 @@ pub fn create_video<'a>(conn: &PgConnection, video_id: Vec<String>, room: Option
 }
 
 /// Get all videos as a vector
-pub fn get_playlist<'a>(conn: &PgConnection, room_name: Option<String>) -> Option<Vec<Video>> {
+pub fn get_playlist<'a>(conn: &PgConnection, room_name: Option<String>) -> Playlist {
 	use self::schema::videos::dsl::*;
 
 	let query = videos.filter(played.eq(false))
@@ -189,10 +191,13 @@ pub fn get_playlist<'a>(conn: &PgConnection, room_name: Option<String>) -> Optio
 					let result = query.filter(room.eq(room_name.to_lowercase()))
 						.load::<Video>(conn)
 						.expect("Error loading videos");
-					return Some(result)
 
+                    return set_playlist_timestamp(result)
 				},
-				None => return None,
+				None => {
+                    let result: Vec<Video> = Vec::new();
+                    return set_playlist_timestamp(result)
+                }
 			}
 		},
 		None => {
@@ -200,9 +205,40 @@ pub fn get_playlist<'a>(conn: &PgConnection, room_name: Option<String>) -> Optio
 				.load::<Video>(conn)
 				.expect("Error loading videos");
 
-			return Some(result)
+            return set_playlist_timestamp(result)
 		},
 	};
+}
+
+
+// 
+fn set_playlist_timestamp(playlist: Vec<Video>) -> Playlist {
+
+    if playlist.len() > 0 {
+        let added_on = playlist[0].added_on;
+
+        match added_on.elapsed() {
+            Ok(elapsed) => {
+                return Playlist {
+                    videos: playlist,
+                    timestamp: Some(elapsed.as_secs())
+                }
+            }
+            Err(e) => {
+                println!("Error while calculating the current video duration: {:?}", e);
+                return Playlist {
+                    videos: playlist,
+                    timestamp: None
+                }
+            }
+        }
+    }
+
+
+    return Playlist {
+        videos: playlist,
+        timestamp: None
+    }
 }
 
 /// Returns a list of videos from Youtube

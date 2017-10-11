@@ -16,6 +16,14 @@ pub struct Video {
     pub played: bool,
     pub added_on: SystemTime,
     pub played_on: Option<SystemTime>,
+    // #[diesel(skip_deserializing)]
+    // pub timestamp: Option<i32>,
+}
+
+#[derive(Serialize)]
+pub struct Playlist {
+    pub videos: Vec<Video>,
+    pub timestamp: Option<u64>,
 }
 
 #[derive(Insertable)]

@@ -18,23 +18,13 @@ use self::youkebox::player::init_playlist_listener;
 // Playlist pages
 
 #[get("/playlist")]
-fn show_playlist(conn: DbConn) -> Option<Json<Vec<Video>>> {
-    let playlist = get_playlist(&conn, None);
-
-    match playlist {
-        Some(playlist) => return Some(Json(playlist)),
-        None => return None,
-    }
+fn show_playlist(conn: DbConn) -> Json<Playlist> {
+    return Json(get_playlist(&conn, None));
 }
 
 #[get("/playlist/<room>")]
-fn show_room_playlist(conn: DbConn, room: &RawStr) -> Option<Json<Vec<Video>>> {
-    let playlist = get_playlist(&conn, Some(room.to_string()));
-
-    match playlist {
-        Some(playlist) => return Some(Json(playlist)),
-        None => return None,
-    }
+fn show_room_playlist(conn: DbConn, room: &RawStr) -> Json<Playlist> {
+    return Json(get_playlist(&conn,  Some(room.to_string())));
 }
 
 #[post("/playlist", format = "application/json", data = "<id_list>")]
