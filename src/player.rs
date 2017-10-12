@@ -67,10 +67,7 @@ pub fn play_current_video<'a>(conn: &PgConnection, room_name: Option<String>) ->
                 }
             }
 
-            {
-              PLAYLIST_THREADS.lock().unwrap().insert(thread_name.clone(), "play".to_string());  
-            }
-            
+            PLAYLIST_THREADS.lock().unwrap().insert(thread_name.clone(), "play".to_string());  
 
             // Wait until the video is played
             // thread::sleep(video_duration);
