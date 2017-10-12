@@ -57,8 +57,23 @@ pub fn play_current_video<'a>(conn: &PgConnection, room_name: Option<String>) ->
                 &video.duration,
                 room_name);
 
+            let thread_name;
+            match room_name.clone() {
+                Some(room_name) => {
+                    thread_name = room_name;
+                },
+                None => {
+                    thread_name = "".to_string();
+                }
+            }
+
+            {
+              PLAYLIST_THREADS.lock().unwrap().insert(thread_name.clone(), "play".to_string());  
+            }
+            
+
             // Wait until the video is played
-            thread::sleep(video_duration);
+            // thread::sleep(video_duration);
 
             let now = SystemTime::now();
             // let elapsed = now.duration_since(played_on.unwrap());
@@ -82,22 +97,13 @@ pub fn play_current_video<'a>(conn: &PgConnection, room_name: Option<String>) ->
                     }
                 }
 
-                let thread_name;
-                match room_name.clone() {
-                    Some(room_name) => {
-                        thread_name = room_name;
-                    },
-                    None => {
-                        thread_name = "".to_string();
-                    }
-                }
+                let thread_name = thread_name.clone();
                 // Check if someone tried to skip the video
                 match PLAYLIST_THREADS.lock().unwrap().get(&thread_name) {
                     Some(thread_name) => {
                         if &thread_name[..] != "play" {
                             playing = false;
                         }
-
                     },
                     None => {
                         PLAYLIST_THREADS.lock().unwrap().insert(thread_name, "play".to_string());

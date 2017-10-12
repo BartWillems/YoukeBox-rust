@@ -167,7 +167,7 @@ pub struct YoutubeVideosDetailed {
 }
 
 #[derive(Serialize)]
-pub struct Error {
+pub struct HttpStatus {
     pub status: u16,
     pub message: String,
 }

@@ -13,7 +13,7 @@ use rocket::http::{Method,RawStr};
 use rocket_contrib::Json;
 use self::youkebox::*;
 use self::youkebox::models::*;
-use self::youkebox::player::init_playlist_listener;
+use self::youkebox::player::{init_playlist_listener, skip_video};
 
 // Playlist pages
 
@@ -37,6 +37,17 @@ fn add_video(conn: DbConn, id_list: String) -> status::Created<Json<Vec<Video>>>
 fn add_video_to_room(conn: DbConn, id_list: String, room: &RawStr) -> status::Created<Json<Vec<Video>>> {
     let videos: Vec<String> = serde_json::from_str(&id_list).unwrap();
     return status::Created("".to_string(), Some(Json(create_video(&conn, videos, Some(room.to_string()) ) ) ) )
+}
+
+#[post("/playlist/<room>/skip")]
+fn skip_song_in_room(room: &RawStr) -> Json<HttpStatus> {
+
+    skip_video(Some(room.to_string()));
+
+    Json(HttpStatus{
+        status: 200,
+        message: "Successfully skipped the song".to_string(),
+    })
 }
 
 // Youtube queries
@@ -70,16 +81,16 @@ fn add_room(conn: DbConn, room: Json<NewRoom>) -> Json<Room> {
 // Error pages
 
 #[error(404)]
-fn not_found() -> Json<Error> {
-    Json(Error{
+fn not_found() -> Json<HttpStatus> {
+    Json(HttpStatus{
         status: 404,
         message: "The requested resource was not found".to_string(),
     })
 }
 
 #[error(500)]
-fn internal_error() -> Json<Error> {
-    Json(Error{
+fn internal_error() -> Json<HttpStatus> {
+    Json(HttpStatus{
         status: 500,
         message: "Internal Server Error".to_string(),
     })
@@ -104,6 +115,7 @@ fn main() {
             search_video, 
             add_video, 
             add_video_to_room,
+            skip_song_in_room,
             show_rooms,
             show_rooms_query,
             add_room])
