@@ -15,23 +15,23 @@ Each route has a prefix: "/api/$version/"
 
 * /playlist 
     * Display the global playlist
-* /playlist/<room>
-    * Display the playlist for <room>
-* /youtube/<query>
+* /playlist/<\room\>
+    * Display the playlist for <\room\>
+* /youtube/<\query\>
     * Search songs on youtube
 * /rooms
     * Display all the rooms
-* /rooms/search/<query>
+* /rooms/search/\<query\>
     * Display the rooms with a filter
 
 **POST**
 
 * /playlist
     * Add a song to the global playlist
-* /playlist/<room>
-    * Add a song to the playlist for <room>
-* /playlist/<room>/skip
-    * Skip a song in <room>
+* /playlist/\<room\>
+    * Add a song to the playlist for \<room\>
+* /playlist/\<room\>/skip
+    * Skip a song in \<room\>
 * /rooms
     * Add a new room
 
