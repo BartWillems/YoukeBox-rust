@@ -45,3 +45,4 @@ Each route has a prefix: "/api/$version/"
 
 * Music ordering
 * Accounts support with room administrators
+* Upvotes & Downvotes

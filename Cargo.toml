@@ -3,7 +3,6 @@ name = "youkebox"
 description= "YoukeBox, a better way to create live playlists"
 version = "0.1.0"
 authors = ["bart <bwillems@protonmail.com>"]
-license = "GPL-3.0"
 license-file = "LICENSE"
 repository = "https://github.com/BartWillems/YoukeBox-rust"
 readme = "README.md"
