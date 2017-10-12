@@ -15,9 +15,9 @@ Each route has a prefix: "/api/$version/"
 
 * /playlist 
     * Display the global playlist
-* /playlist/<\room\>
-    * Display the playlist for <\room\>
-* /youtube/<\query\>
+* /playlist/\<room\>
+    * Display the playlist for \<room\>
+* /youtube/\<query\>
     * Search songs on youtube
 * /rooms
     * Display all the rooms
