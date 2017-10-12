@@ -1,7 +1,13 @@
 [package]
 name = "youkebox"
+description= "YoukeBox, a better way to create live playlists"
 version = "0.1.0"
 authors = ["bart <bwillems@protonmail.com>"]
+license = "GPL-3.0"
+license-file = "LICENSE"
+repository = "https://github.com/BartWillems/YoukeBox-rust"
+readme = "README.md"
+categories = ["web-programming"]
 
 [dependencies]
 chrono = "0.4"
@@ -20,3 +26,6 @@ serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 lazy_static = "0.2"
+
+[badges]
+maintenance = { status = "actively-developed" }
