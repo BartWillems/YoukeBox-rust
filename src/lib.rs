@@ -81,6 +81,16 @@ pub fn create_room<'a>(conn: &PgConnection, mut new_room: NewRoom) -> Result<Roo
 
     new_room.name = new_room.name.trim().to_string();
 
+    if new_room.name.len() == 0 {
+        return Err(Failure(Status::BadRequest));
+    }
+
+    for c in new_room.name.chars() {
+        if !c.is_alphanumeric() && ! c.is_whitespace(){
+            return Err(Failure(Status::BadRequest));
+        }
+    }
+
 	let room = diesel::insert(&new_room)
                 .into(rooms::table)
                 .get_result(conn);

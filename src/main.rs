@@ -88,6 +88,13 @@ fn add_room(conn: DbConn, room: Json<NewRoom>) -> Result<Json<Room>, Failure> {
 }
 
 // Error pages
+#[error(400)]
+fn bad_request() -> Json<HttpStatus> {
+    Json(HttpStatus{
+        status: 400,
+        message: "Bad Request".to_string(),
+    })
+}
 
 #[error(404)]
 fn not_found() -> Json<HttpStatus> {
@@ -136,7 +143,7 @@ fn main() {
             show_rooms,
             show_rooms_query,
             add_room])
-        .catch(errors![not_found, conflict, internal_error])
+        .catch(errors![bad_request, not_found, conflict, internal_error])
         .attach(options)
         .launch();
 }
