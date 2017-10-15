@@ -25,6 +25,7 @@ use r2d2_diesel::ConnectionManager;
 use std::ops::Deref;
 use rocket::http::Status;
 use rocket::request::{self, FromRequest};
+use rocket::response::{Failure};
 use rocket::{Request, State, Outcome};
 use std::time::SystemTime;
 use std::io::Read;
@@ -75,18 +76,25 @@ pub fn establish_connection() -> PgConnection {
 }
 
 /// Create a new room
-pub fn create_room<'a>(conn: &PgConnection, mut r: NewRoom) -> Room {
+pub fn create_room<'a>(conn: &PgConnection, mut new_room: NewRoom) -> Result<Room, Failure> {
 	use schema::rooms;
 
-	r.name = r.name.to_lowercase().replace(" ", "_").trim().to_string();
+    new_room.name = new_room.name.trim().to_string();
 
-	let room = diesel::insert(&r).into(rooms::table)
-		.get_result(conn)
-		.expect("Error while inserting the room.");
+	let room = diesel::insert(&new_room)
+                .into(rooms::table)
+                .get_result(conn);
 
-	play_video_thread(Some(r.name));
-
-	return room;
+    match room {
+        Ok(room) => {
+            play_video_thread(Some(new_room.name));
+            return Ok(room);
+        },
+        Err(e) => {
+            println!("Error while inserting a new room: {}", e);
+            return Err(Failure(Status::Conflict));
+        }
+    }
 }
 
 /// List all the rooms
@@ -95,7 +103,7 @@ pub fn get_rooms<'a>(conn: &PgConnection, query: Option<String>) -> Vec<Room> {
 
 	match query {
 		Some(query) => {
-			rooms.filter(name.like(format!("%{}%", query)))
+			rooms.filter(name.like(format!("%{}%", query.replace("%20"," "))))
 				.order(name)
 				.load::<Room>(conn)
 				.expect("Error while loading the rooms.")

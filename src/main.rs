@@ -8,7 +8,7 @@ extern crate rocket_cors;
 extern crate serde_json;
 
 
-use rocket::response::status;
+use rocket::response::{status, Failure};
 use rocket::http::{Method,RawStr};
 use rocket_contrib::Json;
 use self::youkebox::*;
@@ -74,8 +74,17 @@ fn show_rooms_query(conn: DbConn, query: &RawStr) -> Json<Vec<Room>> {
 }
 
 #[post("/rooms", format = "application/json", data = "<room>")]
-fn add_room(conn: DbConn, room: Json<NewRoom>) -> Json<Room> {
-    Json(create_room(&conn, room.into_inner() ))
+fn add_room(conn: DbConn, room: Json<NewRoom>) -> Result<Json<Room>, Failure> {
+    let room = create_room(&conn, room.into_inner() );
+
+    match room {
+        Ok(room) => {
+            Ok(Json(room))
+        },
+        Err(e) => {
+            Err(e)
+        }
+    }
 }
 
 // Error pages
@@ -85,6 +94,14 @@ fn not_found() -> Json<HttpStatus> {
     Json(HttpStatus{
         status: 404,
         message: "The requested resource was not found".to_string(),
+    })
+}
+
+#[error(409)]
+fn conflict() -> Json<HttpStatus> {
+    Json(HttpStatus{
+        status: 409,
+        message: "Conflict".to_string(),
     })
 }
 
@@ -119,7 +136,7 @@ fn main() {
             show_rooms,
             show_rooms_query,
             add_room])
-        .catch(errors![not_found, internal_error])
+        .catch(errors![not_found, conflict, internal_error])
         .attach(options)
         .launch();
 }
