@@ -11,36 +11,24 @@ use std::time::SystemTime;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
+// use lib::;
+// use youkebox_lib;
+
 use establish_connection;
 
 lazy_static! {
     static ref PLAYLIST_THREADS: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
 }
 
-
 /// Fetches the current video from the playlist and waits for the duration of the video
 /// Afterwards it updates the database and marks the video as played.
-pub fn play_current_video<'a>(conn: &PgConnection, room_name: Option<String>) -> bool {
+pub fn play_current_video<'a>(conn: &PgConnection, room: Room) -> bool {
     use self::schema::videos::dsl::*;
 
-    let video;
-    match room_name.clone() {
-        Some(room_name) => {
-            video = videos
-                .filter(played.eq(false))
-                .filter(room.eq(room_name.to_lowercase()))
+    let video = videos.filter(played.eq(false))
+                .filter(room_id.eq(room.id))
                 .order(added_on)
                 .first::<Video>(conn);
-        },
-        None => {
-            video = videos
-                .filter(played.eq(false))
-                .filter(room.is_null())
-                .order(added_on)
-                .first::<Video>(conn);
-        }
-    };
-    
 
     match video {
         Ok(video) => {
@@ -51,23 +39,13 @@ pub fn play_current_video<'a>(conn: &PgConnection, room_name: Option<String>) ->
                 .execute(conn)
                 .expect("Unable to start playing the current video.");
 
-            println!("Start playing: [{}] With ID: [{}] and duration: [{}] in room: [{:?}].", 
+            println!("Start playing: [{}] With ID: [{}] and duration: [{}] in room: [{}].", 
                 &video.title, 
                 &video.id, 
                 &video.duration,
-                room_name);
+                &room.name);
 
-            let thread_name;
-            match room_name.clone() {
-                Some(room_name) => {
-                    thread_name = room_name;
-                },
-                None => {
-                    thread_name = "".to_string();
-                }
-            }
-
-            PLAYLIST_THREADS.lock().unwrap().insert(thread_name.clone(), "play".to_string());  
+            PLAYLIST_THREADS.lock().unwrap().insert(room.name.clone().to_lowercase(), "play".to_string());  
 
             // Wait until the video is played
             // thread::sleep(video_duration);
@@ -94,23 +72,23 @@ pub fn play_current_video<'a>(conn: &PgConnection, room_name: Option<String>) ->
                     }
                 }
 
-                let thread_name = thread_name.clone();
+                let thread_name = room.name.clone();
                 // Check if someone tried to skip the video
-                match PLAYLIST_THREADS.lock().unwrap().get(&thread_name) {
+                match PLAYLIST_THREADS.lock().unwrap().get(&thread_name.to_lowercase()) {
                     Some(thread_name) => {
                         if &thread_name[..] != "play" {
                             playing = false;
                         }
                     },
                     None => {
-                        PLAYLIST_THREADS.lock().unwrap().insert(thread_name, "play".to_string());
+                        PLAYLIST_THREADS.lock().unwrap().insert(thread_name.to_lowercase(), "play".to_string());
                     }
                 }
 
                 thread::sleep(time::Duration::from_millis(500));
             }
 
-            println!("Done playing [{}] from room [{:?}]", &video.title, room_name);
+            println!("Done playing [{}] from room [{}]", &video.title, &room.name);
 
             // Mark the video as played
             super::diesel::update(&video)
@@ -126,26 +104,14 @@ pub fn play_current_video<'a>(conn: &PgConnection, room_name: Option<String>) ->
 
 
 /// Start a thread to watch a certain playlist
-pub fn play_video_thread<'a>(room: Option<String>) {
-
-    let thread_name;
-
-    match room.clone() {
-        Some(room) => {
-            thread_name = room;
-        },
-        None => {
-            thread_name = "".to_string();
-        }
-    }
-
+pub fn play_video_thread<'a>(room: Room) {
     thread::Builder::new()
-        .name(thread_name)
+        .name(room.name.clone())
         .spawn(move || {
             let mut result;
             let c = establish_connection();
 
-            println!("Room name: {:?}", room.clone());
+            println!("Room name: {:?}", room.name.clone());
             loop {
                 result = play_current_video(&c, room.clone());
 
@@ -170,13 +136,9 @@ pub fn init_playlist_listener<'a>() {
                 .expect("Error loading videos");
 
     for room in result {
-        PLAYLIST_THREADS.lock().unwrap().insert(room.name.clone(),"play".to_string());
-        play_video_thread(Some(room.name));
+        PLAYLIST_THREADS.lock().unwrap().insert(room.name.clone().to_lowercase(),"play".to_string());
+        play_video_thread(room);
     }
-
-    // Also play the FFA room
-    PLAYLIST_THREADS.lock().unwrap().insert("".to_string(),"play".to_string());
-    play_video_thread(None);
 }
 
 /// Returns a duration string as seconds
@@ -197,24 +159,16 @@ pub fn duration_to_seconds(duration: &String) -> u64 {
 }
 
 
-pub fn skip_video(room: Option<String>) {
-
-    let room_name;
-
-    match room.clone() {
-        Some(room) => {
-            room_name = room;
-        },
-        None => {
-            room_name = "".to_string();
-        }
-    }
-
+pub fn skip_video(room: String) {
     let mut map = PLAYLIST_THREADS.lock().unwrap();
 
-    println!("Skipping a song in room [{}]", room_name);
+    let room = room.trim().replace("%20", " ").to_lowercase();
 
-    if let Some(mut_key) = map.get_mut(&room_name) {
+    println!("Skipping a song in room [{}]", room);
+
+    if let Some(mut_key) = map.get_mut(&room) {
         *mut_key = "skip".to_string();
+    } else {
+        println!("Invalid room, couldn not skip song.");
     }
 }

@@ -2,21 +2,21 @@ use super::schema::videos;
 use super::schema::rooms;
 use std::time::SystemTime;
 
+
 // Nullable SQL types should be an Option struct
 #[derive(Serialize, Deserialize)]
-#[derive(Queryable, Identifiable)]
+#[derive(Queryable, Identifiable, Associations)]
+#[belongs_to(Room)]
 pub struct Video {
     pub id: i32,
     pub video_id: String,
     pub title: String,
     pub description: Option<String>,
-    pub room: Option<String>,
+    pub room_id: i32,
     pub duration: String,
     pub played: bool,
     pub added_on: SystemTime,
     pub played_on: Option<SystemTime>,
-    // #[diesel(skip_deserializing)]
-    // pub timestamp: Option<i32>,
 }
 
 #[derive(Serialize)]
@@ -32,11 +32,12 @@ pub struct NewVideo {
     pub video_id: String,
     pub title: String,
     pub description: Option<String>,
-    pub room: Option<String>,
+    pub room_id: i32,
     pub duration: String,
     pub added_on: SystemTime,
 }
 
+#[derive(Clone)]
 #[derive(Serialize, Deserialize)]
 #[derive(Queryable, Identifiable)]
 pub struct Room {
@@ -44,6 +45,10 @@ pub struct Room {
     pub name: String,
     pub description: Option<String>,
 }
+
+// impl Clone for Room {
+//     fn clone(&self) -> Room { *self }
+// }
 
 #[derive(Insertable)]
 #[derive(Deserialize)]

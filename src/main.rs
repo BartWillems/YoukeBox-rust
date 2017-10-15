@@ -17,32 +17,40 @@ use self::youkebox::player::{init_playlist_listener, skip_video};
 
 // Playlist pages
 
-#[get("/playlist")]
-fn show_playlist(conn: DbConn) -> Json<Playlist> {
-    return Json(get_playlist(&conn, None));
-}
-
 #[get("/playlist/<room>")]
-fn show_room_playlist(conn: DbConn, room: &RawStr) -> Json<Playlist> {
-    return Json(get_playlist(&conn,  Some(room.to_string())));
-}
+fn show_playlist(conn: DbConn, room: &RawStr) -> Result<Json<Playlist>, Failure>{
+    let playlist = get_playlist(&conn, room.to_string());
 
-#[post("/playlist", format = "application/json", data = "<id_list>")]
-fn add_video(conn: DbConn, id_list: String) -> status::Created<Json<Vec<Video>>> {
-    let videos: Vec<String> = serde_json::from_str(&id_list).unwrap();
-    return status::Created("".to_string(), Some(Json(create_video(&conn, videos, None))))
+    match playlist {
+        Ok(playlist) => {
+            Ok(Json(playlist))
+        },
+        Err(e) => {
+            Err(e)
+        }
+    }
 }
 
 #[post("/playlist/<room>", format = "application/json", data = "<id_list>")]
-fn add_video_to_room(conn: DbConn, id_list: String, room: &RawStr) -> status::Created<Json<Vec<Video>>> {
+fn add_video(conn: DbConn, id_list: String, room: &RawStr) -> Result<status::Created<Json<Vec<Video>>>, Failure> {
+
     let videos: Vec<String> = serde_json::from_str(&id_list).unwrap();
-    return status::Created("".to_string(), Some(Json(create_video(&conn, videos, Some(room.to_string()) ) ) ) )
+    let result = create_video(&conn, videos, room.to_string());
+
+    match result {
+        Ok(result) => {
+            Ok(status::Created("".to_string(), Some(Json(result))))
+        },
+        Err(e) => {
+            Err(e)
+        }
+    }
 }
 
 #[post("/playlist/<room>/skip")]
 fn skip_song_in_room(room: &RawStr) -> Json<HttpStatus> {
 
-    skip_video(Some(room.to_string()));
+    skip_video(room.to_string());
 
     Json(HttpStatus{
         status: 200,
@@ -135,10 +143,8 @@ fn main() {
         .manage(init_pool())
         .mount("/api/v1", routes![
             show_playlist, 
-            show_room_playlist, 
             search_video, 
             add_video, 
-            add_video_to_room,
             skip_song_in_room,
             show_rooms,
             show_rooms_query,
