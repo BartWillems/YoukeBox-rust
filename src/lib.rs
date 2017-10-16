@@ -36,6 +36,7 @@ type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub mod schema;
 pub mod models;
 pub mod player;
+pub mod user;
 
 pub struct DbConn(pub r2d2::PooledConnection<ConnectionManager<PgConnection>>);
 
@@ -88,8 +89,9 @@ pub fn create_room<'a>(conn: &PgConnection, mut new_room: NewRoom) -> Result<Roo
         return Err(Failure(Status::BadRequest));
     }
 
+    // Only allow  [a-Z], [0-9], ' ' & '_'
     for c in new_room.name.chars() {
-        if !c.is_alphanumeric() && ! c.is_whitespace(){
+        if !c.is_alphanumeric() && c != ' ' && c !=  '_' {
             return Err(Failure(Status::BadRequest));
         }
     }

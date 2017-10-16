@@ -18,3 +18,11 @@ CREATE TABLE videos (
     added_on TIMESTAMP NOT NULL DEFAULT now(),
     played_on TIMESTAMP DEFAULT NULL
 );
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username citext NOT NULL UNIQUE,
+    password VARCHAR NOT NULL,
+    added_on TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP DEFAULT NULL
+);

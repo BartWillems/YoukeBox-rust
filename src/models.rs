@@ -46,10 +46,6 @@ pub struct Room {
     pub description: Option<String>,
 }
 
-// impl Clone for Room {
-//     fn clone(&self) -> Room { *self }
-// }
-
 #[derive(Insertable)]
 #[derive(Deserialize)]
 #[table_name="rooms"]

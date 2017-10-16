@@ -9,6 +9,7 @@ readme = "README.md"
 categories = ["web-programming"]
 
 [dependencies]
+bcrypt = "0.1.4"
 chrono = "0.4"
 diesel = { version = "0.16.0", features = ["postgres"] }
 diesel_codegen = { version = "0.16.0", features = ["postgres"] }

@@ -7,13 +7,13 @@ extern crate rocket_contrib;
 extern crate rocket_cors;
 extern crate serde_json;
 
-
 use rocket::response::{status, Failure};
 use rocket::http::{Method,RawStr};
 use rocket_contrib::Json;
 use self::youkebox::*;
 use self::youkebox::models::*;
 use self::youkebox::player::{init_playlist_listener, skip_video};
+use self::youkebox::user::User;
 
 // Playlist pages
 
