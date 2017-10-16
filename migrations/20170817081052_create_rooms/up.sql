@@ -16,7 +16,7 @@ CREATE TABLE videos (
     duration VARCHAR NOT NULL,
     played BOOLEAN NOT NULL DEFAULT 'f',
     added_on TIMESTAMP NOT NULL DEFAULT now(),
-    played_on TIMESTAMP DEFAULT NULL
+    started_on TIMESTAMP DEFAULT NULL
 );
 
 CREATE TABLE users (

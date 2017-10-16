@@ -253,9 +253,9 @@ pub fn get_playlist<'a>(conn: &PgConnection, room_name: String) -> Result<Playli
 // 
 fn set_playlist_timestamp(playlist: Vec<Video>) -> Playlist {
     if playlist.len() > 0 {
-        let played_on = playlist[0].played_on;
+        let started_on = playlist[0].started_on;
         let now = SystemTime::now();
-        let elapsed = now.duration_since(played_on.unwrap());
+        let elapsed = now.duration_since(started_on.unwrap());
 
         match elapsed {
             Ok(elapsed) => {

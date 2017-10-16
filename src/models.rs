@@ -16,7 +16,7 @@ pub struct Video {
     pub duration: String,
     pub played: bool,
     pub added_on: SystemTime,
-    pub played_on: Option<SystemTime>,
+    pub started_on: Option<SystemTime>,
 }
 
 #[derive(Serialize)]

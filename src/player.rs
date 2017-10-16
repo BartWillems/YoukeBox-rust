@@ -35,7 +35,7 @@ pub fn play_current_video<'a>(conn: &PgConnection, room: Room) -> bool {
             let video_duration = time::Duration::from_secs(duration_to_seconds(&video.duration));
 
             super::diesel::update(&video)
-                .set(played_on.eq(SystemTime::now()))
+                .set(started_on.eq(SystemTime::now()))
                 .execute(conn)
                 .expect("Unable to start playing the current video.");
 
@@ -47,12 +47,7 @@ pub fn play_current_video<'a>(conn: &PgConnection, room: Room) -> bool {
 
             PLAYLIST_THREADS.lock().unwrap().insert(room.name.clone().to_lowercase(), "play".to_string());  
 
-            // Wait until the video is played
-            // thread::sleep(video_duration);
-
             let now = SystemTime::now();
-            // let elapsed = now.duration_since(played_on.unwrap());
-
             let mut playing: bool = true;
 
             // Continue playing this song while playing is true
