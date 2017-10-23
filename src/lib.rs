@@ -1,4 +1,5 @@
 #![feature(plugin)]
+#![plugin(rocket_codegen)]
 #![plugin(dotenv_macros)]
 
 #![recursion_limit="128"]
@@ -7,6 +8,9 @@
 #[macro_use] extern crate diesel_codegen;
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate lazy_static;
+
+extern crate rocket_contrib;
+extern crate rocket_cors;
 
 extern crate dotenv;
 extern crate r2d2;
@@ -24,7 +28,7 @@ use r2d2_diesel::ConnectionManager;
 use std::ops::Deref;
 use rocket::http::Status;
 use rocket::request::{self, FromRequest};
-use rocket::response::{Failure};
+use rocket::response::Failure;
 use rocket::{Request, State, Outcome};
 use std::time::SystemTime;
 use std::io::Read;
@@ -33,6 +37,7 @@ use diesel::types;
 type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
 pub mod schema;
+pub mod routes;
 pub mod models;
 pub mod player;
 pub mod user;

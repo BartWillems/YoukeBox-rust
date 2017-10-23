@@ -100,11 +100,11 @@ impl Room {
         match query {
             Some(query) => {
                 result = rooms.filter(name.like(format!("%{}%", query)))
-                        .order(name)
+                        .order(name.desc())
                         .load::<Room>(conn);
             },
             None => {
-                result = rooms.order(name).load::<Room>(conn);
+                result = rooms.order(name.desc()).load::<Room>(conn);
             }
         }
 
