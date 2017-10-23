@@ -49,7 +49,7 @@ Each route has a prefix: "/api/$version/"
 
 ## Developer notes
 
-I add the following structs with the following impl methods
+I will add the following structs with the following impl methods in the near future
 
 * youtube.rs
     * search(query) -> Vec<YoutubeVideo>
