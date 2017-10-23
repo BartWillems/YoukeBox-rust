@@ -1,5 +1,5 @@
 use super::schema::videos;
-use super::schema::rooms;
+use room::Room;
 use std::time::SystemTime;
 
 
@@ -19,12 +19,6 @@ pub struct Video {
     pub started_on: Option<SystemTime>,
 }
 
-#[derive(Serialize)]
-pub struct Playlist {
-    pub videos: Vec<Video>,
-    pub timestamp: Option<u64>,
-}
-
 #[derive(Insertable)]
 #[derive(Serialize)]
 #[table_name="videos"]
@@ -35,23 +29,6 @@ pub struct NewVideo {
     pub room_id: i32,
     pub duration: String,
     pub added_on: SystemTime,
-}
-
-#[derive(Clone)]
-#[derive(Serialize, Deserialize)]
-#[derive(Queryable, Identifiable)]
-pub struct Room {
-    pub id: i32,
-    pub name: String,
-    pub description: Option<String>,
-}
-
-#[derive(Insertable)]
-#[derive(Deserialize)]
-#[table_name="rooms"]
-pub struct NewRoom {
-    pub name: String,
-    pub description: Option<String>,
 }
 
 // Start with the Youtube models

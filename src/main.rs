@@ -13,53 +13,12 @@ use rocket_contrib::Json;
 use self::youkebox::*;
 use self::youkebox::models::*;
 use self::youkebox::player::{init_playlist_listener, skip_video};
-use self::youkebox::user::User;
+// use self::youkebox::user::User;
+use room::*;
+use playlist::*;
 
-// Playlist pages
-
-#[get("/playlist/<room>")]
-fn show_playlist(conn: DbConn, room: &RawStr) -> Result<Json<Playlist>, Failure>{
-    let playlist = get_playlist(&conn, room.to_string());
-
-    match playlist {
-        Ok(playlist) => {
-            Ok(Json(playlist))
-        },
-        Err(e) => {
-            Err(e)
-        }
-    }
-}
-
-#[post("/playlist/<room>", format = "application/json", data = "<id_list>")]
-fn add_video(conn: DbConn, id_list: String, room: &RawStr) -> Result<status::Created<Json<Vec<Video>>>, Failure> {
-
-    let videos: Vec<String> = serde_json::from_str(&id_list).unwrap();
-    let result = create_video(&conn, videos, room.to_string());
-
-    match result {
-        Ok(result) => {
-            Ok(status::Created("".to_string(), Some(Json(result))))
-        },
-        Err(e) => {
-            Err(e)
-        }
-    }
-}
-
-#[post("/playlist/<room>/skip")]
-fn skip_song_in_room(room: &RawStr) -> Json<HttpStatus> {
-
-    skip_video(room.to_string());
-
-    Json(HttpStatus{
-        status: 200,
-        message: "Successfully skipped the song".to_string(),
-    })
-}
 
 // Youtube queries
-
 #[get("/youtube/<query>")]
 fn search_video(query: &RawStr) -> Option<String> {
     let res = get_videos(query);
@@ -73,17 +32,66 @@ fn search_video(query: &RawStr) -> Option<String> {
 // Rooms
 #[get("/rooms")]
 fn show_rooms(conn: DbConn) -> Json<Vec<Room>> {
-    Json(get_rooms(&conn, None))
+    let rooms = room::Room::all(&conn, None).unwrap();
+
+    Json(rooms)
+}
+
+// Return a playlist for a room
+#[get("/rooms/<room>")]
+fn get_playlist(conn: DbConn, room: i32) -> Result<Json<Playlist>, Failure>{
+    let playlist = playlist::Playlist::get(&conn, room);
+
+    match playlist {
+        Ok(playlist) => {
+            Ok(Json(playlist))
+        },
+        Err(e) => {
+            Err(e)
+        }
+    }
 }
 
 #[get("/rooms/search/<query>")]
-fn show_rooms_query(conn: DbConn, query: &RawStr) -> Json<Vec<Room>> {
-    Json(get_rooms(&conn, Some(query.to_string())))
+fn show_rooms_filtered(conn: DbConn, query: &RawStr) -> Json<Vec<Room>> {
+    let rooms = room::Room::all(&conn, Some(query.to_string())).unwrap();
+
+    Json(rooms)
+}
+
+// Add a song to a room
+#[post("/rooms/<room>", format = "application/json", data = "<id_list>")]
+fn add_video(conn: DbConn, id_list: String, room: i32) -> Result<status::Created<Json<Vec<Video>>>, Failure> {
+
+    let videos: Vec<String> = serde_json::from_str(&id_list).unwrap();
+    let result = create_video(&conn, videos, room);
+
+    match result {
+        Ok(result) => {
+            Ok(status::Created("".to_string(), Some(Json(result))))
+        },
+        Err(e) => {
+            Err(e)
+        }
+    }
+}
+
+// Skip a song in a room
+#[post("/rooms/<room>/skip")]
+fn skip_song_in_room(room: i32) -> Json<HttpStatus> {
+
+    skip_video(room);
+
+    Json(HttpStatus{
+        status: 200,
+        message: "Successfully skipped the song".to_string(),
+    })
 }
 
 #[post("/rooms", format = "application/json", data = "<room>")]
 fn add_room(conn: DbConn, room: Json<NewRoom>) -> Result<Json<Room>, Failure> {
-    let room = create_room(&conn, room.into_inner() );
+
+    let room = room::Room::create(&conn, room.into_inner());
 
     match room {
         Ok(room) => {
@@ -142,12 +150,12 @@ fn main() {
     rocket::ignite()
         .manage(init_pool())
         .mount("/api/v1", routes![
-            show_playlist, 
+            get_playlist, 
             search_video, 
             add_video, 
             skip_song_in_room,
             show_rooms,
-            show_rooms_query,
+            show_rooms_filtered,
             add_room])
         .catch(errors![bad_request, not_found, conflict, internal_error])
         .attach(options)

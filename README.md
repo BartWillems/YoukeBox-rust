@@ -46,3 +46,14 @@ Each route has a prefix: "/api/$version/"
 * Music ordering
 * Accounts support with room administrators
 * Upvotes & Downvotes
+
+## Developer notes
+
+I add the following structs with the following impl methods
+
+* youtube.rs
+    * search(query) -> Vec<YoutubeVideo>
+    * verify(YoutubeVideoId) -> Result<YoutubeVideo, Failure>
+
+* video.rs
+    * add_to_playlist(room) -> (?)

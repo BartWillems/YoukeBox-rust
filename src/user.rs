@@ -49,7 +49,6 @@ impl User {
 
     pub fn create(conn: &PgConnection, mut new_user: NewUser) -> Result<User, Failure> {
         use diesel::prelude::*;
-        // use schema::users;
 
         match hash(&new_user.password[..], DEFAULT_COST) {
             Ok(hashed) => {
@@ -75,25 +74,25 @@ impl User {
         }
     }
 
-    pub fn authenticate(conn: &PgConnection, uname: String, pw: String) -> Result<bool, Failure> {
+    // Verifies the user's password
+    pub fn authenticate(conn: &PgConnection, user: User) -> Result<bool, Failure> {
         use diesel::prelude::*;
         use schema::users::dsl::*;
 
-        let uname = uname.to_lowercase();
-
-        let result = users.filter(lower(username).eq(uname))
+        let result = users.filter(lower(username).eq(user.username.to_lowercase()))
                     .first::<User>(conn);
 
         if let Err(_) = result {
             return Err(Failure(Status::InternalServerError));
         }
 
-        match verify(&result.unwrap().password_hash[..], &pw[..]) {
+        match verify(&result.unwrap().password_hash[..], &user.password_hash[..]) {
             Ok(_) => return Ok(true),
             Err(_)  => return Ok(false)
         }
     }
 
+    // Find & return a user by id
     pub fn find(conn: &PgConnection, user_id: i32) -> Result<User, Failure> {
         use diesel::prelude::*;
         use schema::users::dsl::*;
@@ -111,6 +110,7 @@ impl User {
         }
     }
 
+    // Return all users
     pub fn all(conn: &PgConnection) -> Result<Vec<User>, Failure> {
         use diesel::prelude::*;
         use schema::users::dsl::*;

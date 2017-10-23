@@ -19,8 +19,7 @@ use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use dotenv::dotenv;
 use std::env;
-use self::models::{NewVideo, NewRoom, Video, Playlist, Room, YoutubeVideos, YoutubeVideosDetailed};
-use self::player::*;
+use self::models::{NewVideo, Video, YoutubeVideos, YoutubeVideosDetailed};
 use r2d2_diesel::ConnectionManager;
 use std::ops::Deref;
 use rocket::http::Status;
@@ -37,6 +36,8 @@ pub mod schema;
 pub mod models;
 pub mod player;
 pub mod user;
+pub mod room;
+pub mod playlist;
 
 pub struct DbConn(pub r2d2::PooledConnection<ConnectionManager<PgConnection>>);
 
@@ -79,98 +80,23 @@ pub fn establish_connection() -> PgConnection {
 		.expect(&format!("Error connecting to {}", database_url))
 }
 
-/// Create a new room
-pub fn create_room<'a>(conn: &PgConnection, mut new_room: NewRoom) -> Result<Room, Failure> {
-	use schema::rooms;
-
-    new_room.name = new_room.name.trim().to_string();
-
-    if new_room.name.len() == 0 {
-        return Err(Failure(Status::BadRequest));
-    }
-
-    // Only allow  [a-Z], [0-9], ' ' & '_'
-    for c in new_room.name.chars() {
-        if !c.is_alphanumeric() && c != ' ' && c !=  '_' {
-            return Err(Failure(Status::BadRequest));
-        }
-    }
-
-	let room = diesel::insert(&new_room)
-                .into(rooms::table)
-                .get_result(conn);
-
-    match room {
-        Ok(room) => {
-            let room: Room = room;
-            play_video_thread(room.clone());
-            return Ok(room);
-        },
-        Err(e) => {
-            println!("Error while inserting a new room: {}", e);
-            return Err(Failure(Status::Conflict));
-        }
-    }
-}
-
-/// List all the rooms
-pub fn get_rooms<'a>(conn: &PgConnection, query: Option<String>) -> Vec<Room> {
-	use self::schema::rooms::dsl::*;
-
-	match query {
-		Some(query) => {
-            let room = query.trim().replace("%20", " ");
-
-			rooms.filter(name.like(format!("%{}%", room)))
-				.order(name)
-				.load::<Room>(conn)
-				.expect("Error while loading the rooms.")
-		},
-		None => {
-			rooms.order(name)
-				.load::<Room>(conn)
-				.expect("Error while loading the rooms.")
-		}
-	}
-}
-
-/// Get a single room by name
-pub fn get_room<'a>(conn: &PgConnection, room_name: &String) -> Option<Room> {
-	use self::schema::rooms::dsl::*;
-
-	let room = rooms.filter(lower(name).eq(room_name.to_lowercase()))
-		.first::<Room>(conn);
-
-	match room {
-		Ok(room) => return Some(room),
-		Err(_)	=> return None,
-	}
-}
-
 
 /// Takes a string of youtube video id's seperated by a comma
 /// eg: ssxNqBPRL6Y,_wy4tuFEpz0,...
 /// Those videos will be searched on youtube and added to the videos db table
-pub fn create_video<'a>(conn: &PgConnection, video_id: Vec<String>, room_name: String) -> Result<Vec<Video>, Failure> {
+pub fn create_video<'a>(conn: &PgConnection, video_id: Vec<String>, room_id: i32) -> Result<Vec<Video>, Failure> {
 	use schema::videos;
 
 	let mut videos: Vec<NewVideo> = Vec::new();
 	let id_list = video_id.join(",");
-    let room_name = room_name.trim().replace("%20", " ");
+    
+    let room = room::Room::find(conn, room_id);
 
-    let room;
-    {
-        let r = get_room(conn, &room_name);
-        match r {
-            Some(r) => {
-                room = r;
-            },
-            None => {
-                return Err(Failure(Status::NotFound));
-            }
-        }
+    if room.is_none() {
+        return Err(Failure(Status::NotFound));
     }
 
+    let room = room.unwrap();
 
 	let url = format!(
 		"{}/videos?id={}&part=id,snippet,contentDetails&key={}", 
@@ -216,67 +142,6 @@ pub fn create_video<'a>(conn: &PgConnection, video_id: Vec<String>, room_name: S
             println!("{}", e);
             return Err(Failure(Status::InternalServerError));
         }
-    }
-}
-
-/// Get all videos as a vector
-pub fn get_playlist<'a>(conn: &PgConnection, room_name: String) -> Result<Playlist, Failure> {
-	use self::schema::videos::dsl::*;
-
-    let room_name = room_name.replace("%20", " ").to_lowercase();
-    let room = get_room(conn, &room_name);
-
-    match room {
-        Some(room) => {
-            let result = videos.filter(played.eq(false))
-                            .filter(room_id.eq(room.id))
-                            .order(id)
-                            .load::<Video>(conn);
-
-            match result {
-                Ok(result) => {
-                    return Ok(set_playlist_timestamp(result))
-                },
-                Err(e) => {
-                    println!("Error while fetching the playlist: {}", e);
-                    return Err(Failure(Status::InternalServerError))
-                }
-            }
-        },
-        None => {
-            return Err(Failure(Status::NotFound))
-        }
-    }
-}
-
-
-// 
-fn set_playlist_timestamp(playlist: Vec<Video>) -> Playlist {
-    if playlist.len() > 0 {
-        let started_on = playlist[0].started_on;
-        let now = SystemTime::now();
-        let elapsed = now.duration_since(started_on.unwrap());
-
-        match elapsed {
-            Ok(elapsed) => {
-                return Playlist {
-                    videos: playlist,
-                    timestamp: Some(elapsed.as_secs())
-                }
-            }
-            Err(e) => {
-                println!("Error: {:?}", e);
-                return Playlist {
-                    videos: playlist,
-                    timestamp: None
-                }
-            }
-        }
-    }
-
-    return Playlist {
-        videos: playlist,
-        timestamp: None
     }
 }
 

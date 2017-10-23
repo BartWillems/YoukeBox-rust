@@ -1,23 +1,22 @@
-// #[macro_use]
-// extern crate lazy_static;
-
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
-use self::models::{Video, Room};
+use models::Video;
+use room::Room;
 use std::{thread, time};
 use schema;
-use models;
 use std::time::SystemTime;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-// use lib::;
-// use youkebox_lib;
-
 use establish_connection;
 
 lazy_static! {
-    static ref PLAYLIST_THREADS: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
+    static ref PLAYLIST_THREADS: Mutex<HashMap<i32, VideoStatus>> = Mutex::new(HashMap::new());
+}
+
+enum VideoStatus {
+    Play,
+    Skip,
 }
 
 /// Fetches the current video from the playlist and waits for the duration of the video
@@ -25,10 +24,10 @@ lazy_static! {
 pub fn play_current_video<'a>(conn: &PgConnection, room: Room) -> bool {
     use self::schema::videos::dsl::*;
 
-    let video = videos.filter(played.eq(false))
-                .filter(room_id.eq(room.id))
-                .order(added_on)
-                .first::<Video>(conn);
+    let video = Video::belonging_to(&room)
+                    .filter(played.eq(false))
+                    .order(id)
+                    .first::<Video>(conn);
 
     match video {
         Ok(video) => {
@@ -45,7 +44,7 @@ pub fn play_current_video<'a>(conn: &PgConnection, room: Room) -> bool {
                 &video.duration,
                 &room.name);
 
-            PLAYLIST_THREADS.lock().unwrap().insert(room.name.clone().to_lowercase(), "play".to_string());  
+            PLAYLIST_THREADS.lock().unwrap().insert(room.id.clone(), VideoStatus::Play);  
 
             let now = SystemTime::now();
             let mut playing: bool = true;
@@ -67,20 +66,18 @@ pub fn play_current_video<'a>(conn: &PgConnection, room: Room) -> bool {
                     }
                 }
 
-                let thread_name = room.name.clone();
+                let room = room.id.clone();
                 // Check if someone tried to skip the video
-                match PLAYLIST_THREADS.lock().unwrap().get(&thread_name.to_lowercase()) {
-                    Some(thread_name) => {
-                        if &thread_name[..] != "play" {
-                            playing = false;
-                        }
+                match PLAYLIST_THREADS.lock().unwrap().get(&room) {
+                    Some(status) => {
+                        playing = handle_video_event(&status);
                     },
                     None => {
-                        PLAYLIST_THREADS.lock().unwrap().insert(thread_name.to_lowercase(), "play".to_string());
+                        PLAYLIST_THREADS.lock().unwrap().insert(room, VideoStatus::Play);
                     }
                 }
 
-                thread::sleep(time::Duration::from_millis(500));
+                thread::sleep(time::Duration::from_millis(250));
             }
 
             println!("Done playing [{}] from room [{}]", &video.title, &room.name);
@@ -94,6 +91,13 @@ pub fn play_current_video<'a>(conn: &PgConnection, room: Room) -> bool {
             return true
         },
         Err(_) => return false,
+    };
+}
+
+fn handle_video_event(status: &VideoStatus) -> bool {
+    match status {
+        &VideoStatus::Play => return true,
+        &VideoStatus::Skip => return false
     };
 }
 
@@ -131,7 +135,7 @@ pub fn init_playlist_listener<'a>() {
                 .expect("Error loading videos");
 
     for room in result {
-        PLAYLIST_THREADS.lock().unwrap().insert(room.name.clone().to_lowercase(),"play".to_string());
+        PLAYLIST_THREADS.lock().unwrap().insert(room.id,VideoStatus::Play);
         play_video_thread(room);
     }
 }
@@ -154,16 +158,14 @@ pub fn duration_to_seconds(duration: &String) -> u64 {
 }
 
 
-pub fn skip_video(room: String) {
+pub fn skip_video(room: i32) {
     let mut map = PLAYLIST_THREADS.lock().unwrap();
-
-    let room = room.trim().replace("%20", " ").to_lowercase();
 
     println!("Skipping a song in room [{}]", room);
 
     if let Some(mut_key) = map.get_mut(&room) {
-        *mut_key = "skip".to_string();
+        *mut_key = VideoStatus::Skip;
     } else {
-        println!("Invalid room, couldn not skip song.");
+        println!("Invalid room, could not skip song.");
     }
 }
