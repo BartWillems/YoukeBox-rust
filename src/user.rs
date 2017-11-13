@@ -44,7 +44,7 @@ impl User {
             }
         }
 
-        return Ok(name.to_string());
+        Ok(name.to_string())
     }
 
     pub fn create(conn: &PgConnection, mut new_user: NewUser) -> Result<User, Failure> {
@@ -66,29 +66,29 @@ impl User {
 
         match result {
             Ok(result) => {
-                return Ok(result);
+                Ok(result)
             },
             Err(_) => {
-                return Err(Failure(Status::InternalServerError));
+                Err(Failure(Status::InternalServerError))
             }
         }
     }
 
     // Verifies the user's password
-    pub fn authenticate(conn: &PgConnection, user: User) -> Result<bool, Failure> {
+    pub fn authenticate(conn: &PgConnection, user: &User) -> Result<bool, Failure> {
         use diesel::prelude::*;
         use schema::users::dsl::*;
 
         let result = users.filter(lower(username).eq(user.username.to_lowercase()))
                     .first::<User>(conn);
 
-        if let Err(_) = result {
+        if result.is_err() {
             return Err(Failure(Status::InternalServerError));
         }
 
         match verify(&result.unwrap().password_hash[..], &user.password_hash[..]) {
-            Ok(_) => return Ok(true),
-            Err(_)  => return Ok(false)
+            Ok(_) => Ok(true),
+            Err(_)  => Ok(false)
         }
     }
 
@@ -101,11 +101,11 @@ impl User {
 
         match result {
             Ok(result) => {
-                return Ok(result);
+                Ok(result)
             },
             Err(e) => {
                 println!("Could not find user with id: {}", e);
-                return Err(Failure(Status::NotFound));
+                Err(Failure(Status::NotFound))
             }
         }
     }
@@ -119,11 +119,11 @@ impl User {
 
         match result {
             Ok(result) => {
-                return Ok(result);
+                Ok(result)
             },
             Err(e) => {
                 println!("Error while fetching the users: {}", e);
-                return Err(Failure(Status::InternalServerError));
+                Err(Failure(Status::InternalServerError))
             }
         }
     }

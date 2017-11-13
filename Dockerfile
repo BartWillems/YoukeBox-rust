@@ -38,6 +38,6 @@ RUN createdb -O db_user db_name
 USER root
 RUN cargo build --release
 
-# # Copy the compiled project to the host machine
+# Copy the compiled project to the host machine
 COPY --from=build-env /youkebox/target .
 

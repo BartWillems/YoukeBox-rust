@@ -86,10 +86,10 @@ pub fn establish_connection() -> PgConnection {
 }
 
 
-/// Takes a string of youtube video id's seperated by a comma
-/// eg: ssxNqBPRL6Y,_wy4tuFEpz0,...
-/// Those videos will be searched on youtube and added to the videos db table
-pub fn create_video<'a>(conn: &PgConnection, video_id: Vec<String>, room_id: i32) -> Result<Vec<Video>, Failure> {
+// Takes a string of youtube video id's seperated by a comma
+// eg: ssxNqBPRL6Y,_wy4tuFEpz0,...
+// Those videos will be searched on youtube and added to the videos db table
+pub fn create_video(conn: &PgConnection, video_id: &[String], room_id: i32) -> Result<Vec<Video>, Failure> {
 	use schema::videos;
 
 	let mut videos: Vec<NewVideo> = Vec::new();
@@ -123,7 +123,7 @@ pub fn create_video<'a>(conn: &PgConnection, video_id: Vec<String>, room_id: i32
 
 	let result: YoutubeVideosDetailed = serde_json::from_str(&content).unwrap();
 
-	for youtube_video in *result.items {
+	for youtube_video in &result.items {
 		let new_video = NewVideo {
 			video_id: youtube_video.id.to_string(),
 			title: youtube_video.snippet.title.to_string(),
@@ -141,17 +141,17 @@ pub fn create_video<'a>(conn: &PgConnection, video_id: Vec<String>, room_id: i32
 
     match result {
         Ok(result) => {
-            return Ok(result);
+            Ok(result)
         },
         Err(e) => {
             println!("{}", e);
-            return Err(Failure(Status::InternalServerError));
+            Err(Failure(Status::InternalServerError))
         }
     }
 }
 
 /// Returns a list of videos from Youtube
-pub fn get_videos<'a>(query: &str) -> Option<String> {
+pub fn get_videos(query: &str) -> Option<String> {
 
 	let url = format!(
 		"{}/search?type=video&part=id,snippet&maxResults=20&key={}&q={}&videoCategoryId=10", 
@@ -164,14 +164,14 @@ pub fn get_videos<'a>(query: &str) -> Option<String> {
 		Ok(mut resp) => {
 			let mut content = String::new();
 			resp.read_to_string(&mut content).unwrap();
-			return get_video_durations(Some(&content))
+			get_video_durations(Some(&content))
 		},
-		Err(_)	=> return None,
+		Err(_)	=> None,
 	}
 }
 
 /// Fetches the duration from Youtube for a list of videos
-pub fn get_video_durations<'a>(json_videos: Option<&String>) -> Option<String> {
+pub fn get_video_durations(json_videos: Option<&String>) -> Option<String> {
 	let videos;
 	let mut url: String = format!("{}/videos?id=", *API_URL).to_string();
 
@@ -182,9 +182,9 @@ pub fn get_video_durations<'a>(json_videos: Option<&String>) -> Option<String> {
 		None => return None
 	}
 
-	let result: YoutubeVideos = serde_json::from_str(&videos).unwrap();
+	let result: YoutubeVideos = serde_json::from_str(videos).unwrap();
 
-	for youtube_video in *result.items {
+	for youtube_video in &result.items {
 		url = format!("{},{}", url, youtube_video.id.videoId);
 	}
 
@@ -195,9 +195,9 @@ pub fn get_video_durations<'a>(json_videos: Option<&String>) -> Option<String> {
 		Ok(mut resp) => {
 			let mut content = String::new();
 			resp.read_to_string(&mut content).unwrap();
-			return Some(content)
+			Some(content)
 		},
-		Err(_)	=> return None,
+		Err(_)	=> None,
 	}
 }
 

@@ -21,10 +21,10 @@ enum VideoStatus {
 
 /// Fetches the current video from the playlist and waits for the duration of the video
 /// Afterwards it updates the database and marks the video as played.
-pub fn play_current_video<'a>(conn: &PgConnection, room: Room) -> bool {
+pub fn play_current_video(conn: &PgConnection, room: &Room) -> bool {
     use self::schema::videos::dsl::*;
 
-    let video = Video::belonging_to(&room)
+    let video = Video::belonging_to(room)
                     .filter(played.eq(false))
                     .order(id)
                     .first::<Video>(conn);
@@ -44,7 +44,7 @@ pub fn play_current_video<'a>(conn: &PgConnection, room: Room) -> bool {
                 &video.duration,
                 &room.name);
 
-            PLAYLIST_THREADS.lock().unwrap().insert(room.id.clone(), VideoStatus::Play);  
+            PLAYLIST_THREADS.lock().unwrap().insert(room.id, VideoStatus::Play);  
 
             let now = SystemTime::now();
             let mut playing: bool = true;
@@ -66,14 +66,14 @@ pub fn play_current_video<'a>(conn: &PgConnection, room: Room) -> bool {
                     }
                 }
 
-                let room = room.id.clone();
+                // let room = room.id;
                 // Check if someone tried to skip the video
-                match PLAYLIST_THREADS.lock().unwrap().get(&room) {
+                match PLAYLIST_THREADS.lock().unwrap().get(&room.id) {
                     Some(status) => {
-                        playing = handle_video_event(&status);
+                        playing = handle_video_event(status);
                     },
                     None => {
-                        PLAYLIST_THREADS.lock().unwrap().insert(room, VideoStatus::Play);
+                        PLAYLIST_THREADS.lock().unwrap().insert(room.id, VideoStatus::Play);
                     }
                 }
 
@@ -88,22 +88,22 @@ pub fn play_current_video<'a>(conn: &PgConnection, room: Room) -> bool {
                 .execute(conn)
                 .expect("Unable to mark the current video as played.");
 
-            return true
+            true
         },
-        Err(_) => return false,
-    };
+        Err(_) => false,
+    }
 }
 
 fn handle_video_event(status: &VideoStatus) -> bool {
-    match status {
-        &VideoStatus::Play => return true,
-        &VideoStatus::Skip => return false
-    };
+    match *status {
+        VideoStatus::Play => true,
+        VideoStatus::Skip => false
+    }
 }
 
 
 /// Start a thread to watch a certain playlist
-pub fn play_video_thread<'a>(room: Room) {
+pub fn play_video_thread(room: Room) {
     thread::Builder::new()
         .name(room.name.clone())
         .spawn(move || {
@@ -112,7 +112,7 @@ pub fn play_video_thread<'a>(room: Room) {
 
             println!("Room name: {:?}", room.name.clone());
             loop {
-                result = play_current_video(&c, room.clone());
+                result = play_current_video(&c, &room);
 
                 if ! result {
                     // Wait 1 second before trying to play a new video
@@ -126,7 +126,7 @@ pub fn play_video_thread<'a>(room: Room) {
 
 /// Loop through every room & start playing their playlists
 /// At the end of the loop, start the FFA playlist(room None)
-pub fn init_playlist_listener<'a>() {
+pub fn init_playlist_listener() {
     use self::schema::rooms::dsl::*;
 
     let conn = establish_connection();
@@ -142,7 +142,7 @@ pub fn init_playlist_listener<'a>() {
 
 /// Returns a duration string as seconds
 /// EG: "PT1H10M10S" -> 4210
-pub fn duration_to_seconds(duration: &String) -> u64 {
+pub fn duration_to_seconds(duration: &str) -> u64 {
     let v: Vec<&str> = duration.split(|c: char| !c.is_numeric()).collect();
     let mut index: u32 = 0;
     let mut tmp: i32 = 0;
@@ -154,7 +154,7 @@ pub fn duration_to_seconds(duration: &String) -> u64 {
         }
     }
 
-    return tmp as u64
+    tmp as u64
 }
 
 

@@ -129,7 +129,7 @@ pub struct YoutubeVideos {
     pub nextPageToken: Option<String>,
     pub regionCode: Option<String>,
     pub pageInfo: Box<Option<PageInfo>>,
-    pub items: Box<Vec<YoutubeVideo>>,
+    pub items: Vec<YoutubeVideo>,
 }
 
 #[allow(non_snake_case)]
@@ -140,7 +140,7 @@ pub struct YoutubeVideosDetailed {
     pub nextPageToken: Option<String>,
     pub regionCode: Option<String>,
     pub pageInfo: Box<PageInfo>,
-    pub items: Box<Vec<YoutubeVideoDetailed>>,
+    pub items: Vec<YoutubeVideoDetailed>,
 }
 
 #[derive(Serialize)]

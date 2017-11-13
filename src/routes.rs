@@ -1,3 +1,5 @@
+#![allow(unknown_lints, needless_pass_by_value)]
+
 use create_video;
 use DbConn;
 use get_videos;
@@ -17,8 +19,8 @@ fn search_video(query: &RawStr) -> Option<String> {
     let res = get_videos(query);
 
     match res {
-        Some(res)   => return Some(res),
-        None        => return None,
+        Some(res)   => Some(res),
+        None        => None,
     }
 }
 
@@ -57,7 +59,7 @@ fn show_rooms_filtered(conn: DbConn, query: &RawStr) -> Json<Vec<Room>> {
 fn add_video(conn: DbConn, id_list: String, room: i32) -> Result<status::Created<Json<Vec<Video>>>, Failure> {
 
     let videos: Vec<String> = serde_json::from_str(&id_list).unwrap();
-    let result = create_video(&conn, videos, room);
+    let result = create_video(&conn, &videos, room);
 
     match result {
         Ok(result) => {

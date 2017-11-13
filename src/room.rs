@@ -29,7 +29,7 @@ impl Room {
 
         new_room.name = new_room.name.trim().to_string();
 
-        if new_room.name.len() == 0 {
+        if new_room.name.is_empty() {
             return Err(Failure(Status::BadRequest));
         }
 
@@ -46,10 +46,10 @@ impl Room {
 
         match result {
             Ok(result) => {
-                return Ok(result);
+                Ok(result)
             },
             Err(_) => {
-                return Err(Failure(Status::InternalServerError));
+                Err(Failure(Status::InternalServerError))
             }
         }
     }
@@ -63,10 +63,10 @@ impl Room {
 
         match result {
             Ok(_result) => {
-                return Ok(())
+                Ok(())
             },
             Err(_) => {
-                return Err(Failure(Status::NotFound));
+                Err(Failure(Status::NotFound))
             }
         }
     }
@@ -81,10 +81,10 @@ impl Room {
 
         match result {
             Ok(result) => {
-                return Some(result);
+                Some(result)
             },
             Err(_e) => {
-                return None;
+                None
             }
         }
     }
@@ -110,11 +110,11 @@ impl Room {
 
         match result {
             Ok(result) => {
-                return Ok(result);
+                Ok(result)
             },
             Err(e) => {
                 println!("Error while fetching the rooms: {}", e);
-                return Err(Failure(Status::InternalServerError));
+                Err(Failure(Status::InternalServerError))
             }
         }
     }

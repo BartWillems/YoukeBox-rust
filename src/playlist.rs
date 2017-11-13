@@ -33,18 +33,18 @@ impl Playlist {
 
         match result {
             Ok(result) => {
-                return Ok(set_playlist_timestamp(result))
+                Ok(set_playlist_timestamp(result))
             },
             Err(e) => {
                 println!("Error while fetching the playlist: {}", e);
-                return Err(Failure(Status::InternalServerError))
+                Err(Failure(Status::InternalServerError))
             }
         }
     }
 }
 
 fn set_playlist_timestamp(playlist: Vec<Video>) -> Playlist {
-    if playlist.len() > 0 {
+    if ! playlist.is_empty() {
         let started_on = playlist[0].started_on;
 
         let now = SystemTime::now();
@@ -67,7 +67,7 @@ fn set_playlist_timestamp(playlist: Vec<Video>) -> Playlist {
         }
     }
 
-    return Playlist {
+    Playlist {
         videos: playlist,
         timestamp: None
     }
