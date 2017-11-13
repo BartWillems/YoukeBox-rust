@@ -75,7 +75,7 @@ fn add_video(conn: DbConn, id_list: String, room: i32) -> Result<status::Created
 #[post("/rooms/<room>/skip")]
 fn skip_song_in_room(room: i32) -> Json<HttpStatus> {
 
-    skip_video(room);
+    skip_video(&room);
 
     Json(HttpStatus{
         status: 200,

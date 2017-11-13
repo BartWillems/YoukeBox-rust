@@ -66,7 +66,6 @@ pub fn play_current_video(conn: &PgConnection, room: &Room) -> bool {
                     }
                 }
 
-                // let room = room.id;
                 // Check if someone tried to skip the video
                 match PLAYLIST_THREADS.lock().unwrap().get(&room.id) {
                     Some(status) => {
@@ -110,7 +109,7 @@ pub fn play_video_thread(room: Room) {
             let mut result;
             let c = establish_connection();
 
-            println!("Room name: {:?}", room.name.clone());
+            println!("Room name: {}", room.name.clone());
             loop {
                 result = play_current_video(&c, &room);
 
@@ -124,8 +123,8 @@ pub fn play_video_thread(room: Room) {
 }
 
 
-/// Loop through every room & start playing their playlists
-/// At the end of the loop, start the FFA playlist(room None)
+// Loop through every room & start playing their playlists
+// At the end of the loop, start the FFA playlist(room None)
 pub fn init_playlist_listener() {
     use self::schema::rooms::dsl::*;
 
@@ -140,8 +139,8 @@ pub fn init_playlist_listener() {
     }
 }
 
-/// Returns a duration string as seconds
-/// EG: "PT1H10M10S" -> 4210
+// Returns a duration string as seconds
+// EG: "PT1H10M10S" -> 4210
 pub fn duration_to_seconds(duration: &str) -> u64 {
     let v: Vec<&str> = duration.split(|c: char| !c.is_numeric()).collect();
     let mut index: u32 = 0;
@@ -158,12 +157,12 @@ pub fn duration_to_seconds(duration: &str) -> u64 {
 }
 
 
-pub fn skip_video(room: i32) {
+pub fn skip_video(room: &i32) {
     let mut map = PLAYLIST_THREADS.lock().unwrap();
 
     println!("Skipping a song in room [{}]", room);
 
-    if let Some(mut_key) = map.get_mut(&room) {
+    if let Some(mut_key) = map.get_mut(room) {
         *mut_key = VideoStatus::Skip;
     } else {
         println!("Invalid room, could not skip song.");

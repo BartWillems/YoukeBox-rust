@@ -5,6 +5,7 @@ use rocket::http::Status;
 use rocket::response::Failure;
 use std::time::SystemTime;
 use models::Video;
+use room::Room;
 
 #[derive(Serialize)]
 pub struct Playlist {
@@ -18,7 +19,7 @@ impl Playlist {
         use diesel::prelude::*;
         use schema::videos::dsl::*;
 
-        let room = super::room::Room::find(conn, r_id);
+        let room = Room::find(conn, r_id);
 
         if room.is_none() {
             return Err(Failure(Status::NotFound))
@@ -33,7 +34,11 @@ impl Playlist {
 
         match result {
             Ok(result) => {
-                Ok(set_playlist_timestamp(result))
+                let timestamp = get_timestamp(&result);
+                Ok(Playlist {
+                    videos: result,
+                    timestamp: timestamp
+                })
             },
             Err(e) => {
                 println!("Error while fetching the playlist: {}", e);
@@ -43,6 +48,27 @@ impl Playlist {
     }
 }
 
+fn get_timestamp(playlist: &[Video]) -> Option<u64> {
+    if playlist.is_empty() {
+        None
+    } else {
+        let started_on = playlist[0].started_on;
+
+        let now = SystemTime::now();
+        let elapsed = now.duration_since(started_on.unwrap());
+
+        match elapsed {
+            Ok(elapsed) => Some(elapsed.as_secs()),
+            Err(e) => {
+                println!("Error while calulcating the playlist timestamp: {:?}", e);
+                None
+            }
+        }
+    }
+}
+
+// I leave this here because I still want to bench it against get_timestamp
+#[allow(dead_code)]
 fn set_playlist_timestamp(playlist: Vec<Video>) -> Playlist {
     if ! playlist.is_empty() {
         let started_on = playlist[0].started_on;
