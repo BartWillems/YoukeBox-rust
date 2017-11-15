@@ -23,6 +23,11 @@ pub struct NewRoom {
     pub description: Option<String>,
 }
 
+#[derive(FromForm)]
+pub struct SearchRoom {
+    pub name: String,
+}
+
 impl Room {
     #[inline]
     pub fn create(conn: &PgConnection, mut new_room: NewRoom) -> Result<Room, Failure> {

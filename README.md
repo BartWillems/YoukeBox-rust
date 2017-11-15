@@ -13,27 +13,34 @@ Each route has a prefix: "/api/$version/"
 
 **GET**
 
-* /playlist 
-    * Display the global playlist
-* /playlist/\<room\>
-    * Display the playlist for \<room\>
+* /rooms 
+    * Display every room
+* /rooms?\<room\>
+    * Search for rooms with a query. eg: /rooms?name=death
+* /room/\<id\>
+    * Display the playlist for the room with id: \<id\>
 * /youtube/\<query\>
     * Search songs on youtube
-* /rooms
-    * Display all the rooms
-* /rooms/search/\<query\>
-    * Display the rooms with a filter
 
 **POST**
 
-* /playlist
-    * Add a song to the global playlist
-* /playlist/\<room\>
-    * Add a song to the playlist for \<room\>
-* /playlist/\<room\>/skip
-    * Skip a song in \<room\>
+* /rooms/\<id\>
+    * Add songs to the room with id:  \<id\>
+    * Format: "application/json"
+    * [ "ZnJVcuUDnW4" ]
+* /rooms/\<id\>/skip
+    * Skip a song in the room with id: \<id\>
+    * i32: 4
 * /rooms
     * Add a new room
+    * Format: "application/json"
+    * { name: "room name", description: "room description" }
+
+**DELETE**
+
+* /rooms/\<id\>
+    * Delete the room with id: \<id\>
+    * i32: 4
 
 ## What does the YoukeBox support atm?
 

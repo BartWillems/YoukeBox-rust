@@ -24,11 +24,6 @@ fn search_video(query: &RawStr) -> Option<String> {
     }
 }
 
-#[derive(FromForm)]
-pub struct SearchRoom {
-    pub name: String,
-}
-
 // Rooms
 #[get("/rooms?<room>")]
 fn show_rooms(conn: DbConn, room: Option<SearchRoom>) -> Json<Vec<Room>> {
