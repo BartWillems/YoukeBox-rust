@@ -98,6 +98,24 @@ fn add_room(conn: DbConn, room: Json<NewRoom>) -> Result<Json<Room>, Failure> {
     }
 }
 
+#[delete("/rooms/<room>")]
+fn delete_room(conn: DbConn, room: i32) -> Result<Json<HttpStatus>, Failure> {
+    let result = Room::delete(&conn, room);
+
+    match result {
+        Ok(_result) => {
+            Ok(Json(HttpStatus{
+                status: 200,
+                message: "Successfully removed the room.".to_string(),
+            }))
+        },
+        Err(e) => {
+            Err(e)
+        }
+    }
+    
+}
+
 // Error pages
 #[error(400)]
 fn bad_request() -> Json<HttpStatus> {

@@ -4,6 +4,7 @@ use diesel::pg::PgConnection;
 use rocket::http::Status;
 use rocket::response::Failure;
 use super::schema::rooms;
+use player::play_video_thread;
 
 #[derive(Clone)]
 #[derive(Serialize, Deserialize)]
@@ -40,13 +41,16 @@ impl Room {
             }
         }
 
-        let result = diesel::insert(&new_room)
-                        .into(rooms::table)
-                        .get_result(conn);
+        // I add the type here because othwerise the clone() doesn't know which type it is.
+        let created_room: Result<Room, diesel::result::Error> 
+                = diesel::insert(&new_room)
+                    .into(rooms::table)
+                    .get_result(conn);
 
-        match result {
-            Ok(result) => {
-                Ok(result)
+        match created_room {
+            Ok(room) => {
+                play_video_thread(room.clone());
+                Ok(room)
             },
             Err(_) => {
                 Err(Failure(Status::InternalServerError))
@@ -54,6 +58,7 @@ impl Room {
         }
     }
 
+    #[inline]
     pub fn delete(conn: &PgConnection, room_id: i32) -> Result<(), Failure> {
         use diesel::prelude::*;
         use schema::rooms::dsl::*;
@@ -66,7 +71,7 @@ impl Room {
                 Ok(())
             },
             Err(_) => {
-                Err(Failure(Status::NotFound))
+                Err(Failure(Status::InternalServerError))
             }
         }
     }

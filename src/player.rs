@@ -144,25 +144,25 @@ pub fn init_playlist_listener() {
 pub fn duration_to_seconds(duration: &str) -> u64 {
     let v: Vec<&str> = duration.split(|c: char| !c.is_numeric()).collect();
     let mut index: u32 = 0;
-    let mut tmp: i32 = 0;
+    let mut total: i32 = 0;
 
     for i in (0..v.len()).rev() {
         if ! v[i].is_empty() {
-            tmp += v[i].parse::<i32>().unwrap() * (60i32.pow(index));
+            total += v[i].parse::<i32>().unwrap() * (60i32.pow(index));
             index += 1;
         }
     }
 
-    tmp as u64
+    total as u64
 }
 
 
 pub fn skip_video(room: &i32) {
-    let mut map = PLAYLIST_THREADS.lock().unwrap();
+    let mut rooms = PLAYLIST_THREADS.lock().unwrap();
 
     println!("Skipping a song in room [{}]", room);
 
-    if let Some(mut_key) = map.get_mut(room) {
+    if let Some(mut_key) = rooms.get_mut(room) {
         *mut_key = VideoStatus::Skip;
     } else {
         println!("Invalid room, could not skip song.");

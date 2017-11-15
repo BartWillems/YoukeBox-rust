@@ -54,6 +54,8 @@ fn get_timestamp(playlist: &[Video]) -> Option<u64> {
     } else {
         let started_on = playlist[0].started_on;
 
+        println!("First song: {}", playlist[0].title);
+
         let now = SystemTime::now();
         let elapsed = now.duration_since(started_on.unwrap());
 
@@ -64,37 +66,5 @@ fn get_timestamp(playlist: &[Video]) -> Option<u64> {
                 None
             }
         }
-    }
-}
-
-// I leave this here because I still want to bench it against get_timestamp
-#[allow(dead_code)]
-fn set_playlist_timestamp(playlist: Vec<Video>) -> Playlist {
-    if ! playlist.is_empty() {
-        let started_on = playlist[0].started_on;
-
-        let now = SystemTime::now();
-        let elapsed = now.duration_since(started_on.unwrap());
-
-        match elapsed {
-            Ok(elapsed) => {
-                return Playlist {
-                    videos: playlist,
-                    timestamp: Some(elapsed.as_secs())
-                }
-            }
-            Err(e) => {
-                println!("Error: {:?}", e);
-                return Playlist {
-                    videos: playlist,
-                    timestamp: None
-                }
-            }
-        }
-    }
-
-    Playlist {
-        videos: playlist,
-        timestamp: None
     }
 }
