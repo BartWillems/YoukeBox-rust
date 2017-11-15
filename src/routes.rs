@@ -24,10 +24,20 @@ fn search_video(query: &RawStr) -> Option<String> {
     }
 }
 
+#[derive(FromForm)]
+pub struct SearchRoom {
+    pub name: String,
+}
+
 // Rooms
-#[get("/rooms")]
-fn show_rooms(conn: DbConn) -> Json<Vec<Room>> {
-    let rooms = Room::all(&conn, None).unwrap();
+#[get("/rooms?<room>")]
+fn show_rooms(conn: DbConn, room: Option<SearchRoom>) -> Json<Vec<Room>> {
+    let rooms: Vec<Room>;
+    if let Some(r) = room {
+        rooms = Room::all(&conn, Some(r.name)).unwrap();
+    } else {
+        rooms = Room::all(&conn, None).unwrap();
+    }
 
     Json(rooms)
 }
@@ -45,13 +55,6 @@ fn get_playlist(conn: DbConn, room: i32) -> Result<Json<Playlist>, Failure>{
             Err(e)
         }
     }
-}
-
-#[get("/rooms/search/<query>")]
-fn show_rooms_filtered(conn: DbConn, query: &RawStr) -> Json<Vec<Room>> {
-    let rooms = Room::all(&conn, Some(query.to_string())).unwrap();
-
-    Json(rooms)
 }
 
 // Add a song to a room
@@ -72,10 +75,10 @@ fn add_video(conn: DbConn, id_list: String, room: i32) -> Result<status::Created
 }
 
 // Skip a song in a room
-#[post("/rooms/<room>/skip")]
-fn skip_song_in_room(room: i32) -> Json<HttpStatus> {
+#[post("/rooms/<id>/skip")]
+fn skip_song_in_room(id: i32) -> Json<HttpStatus> {
 
-    skip_video(&room);
+    skip_video(&id);
 
     Json(HttpStatus{
         status: 200,
@@ -98,9 +101,9 @@ fn add_room(conn: DbConn, room: Json<NewRoom>) -> Result<Json<Room>, Failure> {
     }
 }
 
-#[delete("/rooms/<room>")]
-fn delete_room(conn: DbConn, room: i32) -> Result<Json<HttpStatus>, Failure> {
-    let result = Room::delete(&conn, room);
+#[delete("/rooms/<id>")]
+fn delete_room(conn: DbConn, id: i32) -> Result<Json<HttpStatus>, Failure> {
+    let result = Room::delete(&conn, id);
 
     match result {
         Ok(_result) => {
