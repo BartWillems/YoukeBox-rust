@@ -28,9 +28,9 @@ fn main() {
     rocket::ignite()
         .manage(init_pool())
         .mount("/api/v1", routes![
-            get_playlist, 
-            search_video, 
-            add_video, 
+            get_playlist,
+            search_video,
+            add_video,
             skip_song_in_room,
             show_rooms,
             add_room,

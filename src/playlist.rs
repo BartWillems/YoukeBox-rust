@@ -4,7 +4,7 @@ use diesel::pg::PgConnection;
 use rocket::http::Status;
 use rocket::response::Failure;
 use std::time::SystemTime;
-use models::Video;
+use video::Video;
 use room::Room;
 
 #[derive(Serialize)]
@@ -53,8 +53,6 @@ fn get_timestamp(playlist: &[Video]) -> Option<u64> {
         None
     } else {
         let started_on = playlist[0].started_on;
-
-        println!("First song: {}", playlist[0].title);
 
         let now = SystemTime::now();
         let elapsed = now.duration_since(started_on.unwrap());

@@ -1,22 +1,22 @@
 #![allow(unknown_lints, needless_pass_by_value)]
 
-use create_video;
 use DbConn;
-use get_videos;
 use models::HttpStatus;
-use models::Video;
-use player::skip_video;
-use playlist::*;
 use rocket::http::RawStr;
 use rocket::response::{status, Failure};
 use rocket_contrib::Json;
-use room::*;
 use serde_json;
+
+use player::skip_video;
+use playlist::*;
+use room::*;
+use video::*;
+use youtube::*;
 
 // Youtube queries
 #[get("/youtube/<query>")]
 fn search_video(query: &RawStr) -> Option<String> {
-    let res = get_videos(query);
+    let res = YoutubeVideo::search(query);
 
     match res {
         Some(res)   => Some(res),
@@ -57,7 +57,7 @@ fn get_playlist(conn: DbConn, room: i32) -> Result<Json<Playlist>, Failure>{
 fn add_video(conn: DbConn, id_list: String, room: i32) -> Result<status::Created<Json<Vec<Video>>>, Failure> {
 
     let videos: Vec<String> = serde_json::from_str(&id_list).unwrap();
-    let result = create_video(&conn, &videos, room);
+    let result = YoutubeVideo::get(&conn, &videos, room);
 
     match result {
         Ok(result) => {
@@ -67,18 +67,6 @@ fn add_video(conn: DbConn, id_list: String, room: i32) -> Result<status::Created
             Err(e)
         }
     }
-}
-
-// Skip a song in a room
-#[post("/rooms/<id>/skip")]
-fn skip_song_in_room(id: i32) -> Json<HttpStatus> {
-
-    skip_video(&id);
-
-    Json(HttpStatus{
-        status: 200,
-        message: "Successfully skipped the song".to_string(),
-    })
 }
 
 #[post("/rooms", format = "application/json", data = "<room>")]
@@ -93,6 +81,16 @@ fn add_room(conn: DbConn, room: Json<NewRoom>) -> Result<Json<Room>, Failure> {
         Err(e) => {
             Err(e)
         }
+    }
+}
+
+#[put("/rooms", format = "application/json", data = "<room>")]
+fn update_room(conn: DbConn, room: Json<Room>) -> Result<Json<Room>, Failure> {
+    let result = Room::update(&conn, &room.into_inner());
+
+    match result {
+        Ok(new_room) => Ok(Json(new_room)),
+        Err(e) => Err(e)
     }
 }
 
@@ -111,7 +109,18 @@ fn delete_room(conn: DbConn, id: i32) -> Result<Json<HttpStatus>, Failure> {
             Err(e)
         }
     }
-    
+}
+
+// Skip a song in a room
+#[post("/rooms/<id>/skip")]
+fn skip_song_in_room(id: i32) -> Json<HttpStatus> {
+
+    skip_video(&id);
+
+    Json(HttpStatus{
+        status: 200,
+        message: "Successfully skipped the song".to_string(),
+    })
 }
 
 // Error pages

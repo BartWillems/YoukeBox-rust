@@ -23,15 +23,11 @@ use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use dotenv::dotenv;
 use std::env;
-use self::models::{NewVideo, Video, YoutubeVideos, YoutubeVideosDetailed};
 use r2d2_diesel::ConnectionManager;
 use std::ops::Deref;
 use rocket::http::Status;
 use rocket::request::{self, FromRequest};
-use rocket::response::Failure;
 use rocket::{Request, State, Outcome};
-use std::time::SystemTime;
-use std::io::Read;
 use diesel::types;
 
 type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
@@ -43,6 +39,8 @@ pub mod player;
 pub mod user;
 pub mod room;
 pub mod playlist;
+pub mod youtube;
+pub mod video;
 
 pub struct DbConn(pub r2d2::PooledConnection<ConnectionManager<PgConnection>>);
 
@@ -85,121 +83,6 @@ pub fn establish_connection() -> PgConnection {
 		.expect(&format!("Error connecting to {}", database_url))
 }
 
-
-// Takes a string of youtube video id's seperated by a comma
-// eg: ssxNqBPRL6Y,_wy4tuFEpz0,...
-// Those videos will be searched on youtube and added to the videos db table
-pub fn create_video(conn: &PgConnection, video_id: &[String], room_id: i32) -> Result<Vec<Video>, Failure> {
-	use schema::videos;
-
-	let mut videos: Vec<NewVideo> = Vec::new();
-	let id_list = video_id.join(",");
-    
-    let room = room::Room::find(conn, room_id);
-
-    if room.is_none() {
-        return Err(Failure(Status::NotFound));
-    }
-
-    let room = room.unwrap();
-
-	let url = format!(
-		"{}/videos?id={}&part=id,snippet,contentDetails&key={}", 
-		*API_URL,
-		id_list,
-		*API_KEY
-	);
-
-	let resp = reqwest::get(&url);
-	let mut content;
-
-	match resp {
-		Ok(mut resp) => {
-			content = String::new();
-			resp.read_to_string(&mut content).unwrap();
-		},
-		Err(_) => content = String::new(),
-	}
-
-	let result: YoutubeVideosDetailed = serde_json::from_str(&content).unwrap();
-
-	for youtube_video in &result.items {
-		let new_video = NewVideo {
-			video_id: youtube_video.id.to_string(),
-			title: youtube_video.snippet.title.to_string(),
-			description: Some(youtube_video.snippet.description.to_string()),
-			room_id: room.id,
-			duration: youtube_video.contentDetails.duration.to_string(),
-			added_on: SystemTime::now(),
-		};
-
-		videos.push(new_video);
-	}
-
-    let result = diesel::insert(&videos).into(videos::table)
-    	.get_results(conn);
-
-    match result {
-        Ok(result) => {
-            Ok(result)
-        },
-        Err(e) => {
-            println!("{}", e);
-            Err(Failure(Status::InternalServerError))
-        }
-    }
-}
-
-/// Returns a list of videos from Youtube
-pub fn get_videos(query: &str) -> Option<String> {
-
-	let url = format!(
-		"{}/search?type=video&part=id,snippet&maxResults=20&key={}&q={}&videoCategoryId=10", 
-		*API_URL,
-		*API_KEY, 
-		query);
-	let resp = reqwest::get(&url);
-
-	match resp {
-		Ok(mut resp) => {
-			let mut content = String::new();
-			resp.read_to_string(&mut content).unwrap();
-			get_video_durations(Some(&content))
-		},
-		Err(_)	=> None,
-	}
-}
-
-/// Fetches the duration from Youtube for a list of videos
-pub fn get_video_durations(json_videos: Option<&String>) -> Option<String> {
-	let videos;
-	let mut url: String = format!("{}/videos?id=", *API_URL).to_string();
-
-	match json_videos {
-		Some(json_videos) => {
-			videos = Some(json_videos).unwrap();
-		},
-		None => return None
-	}
-
-	let result: YoutubeVideos = serde_json::from_str(videos).unwrap();
-
-	for youtube_video in &result.items {
-		url = format!("{},{}", url, youtube_video.id.videoId);
-	}
-
-	url = format!("{}&part=id,snippet,contentDetails&key={}", url, *API_KEY);
-	let resp = reqwest::get(&url);
-
-	match resp {
-		Ok(mut resp) => {
-			let mut content = String::new();
-			resp.read_to_string(&mut content).unwrap();
-			Some(content)
-		},
-		Err(_)	=> None,
-	}
-}
 
 pub fn init_pool() -> Pool {
 	dotenv().ok();

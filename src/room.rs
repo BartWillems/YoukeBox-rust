@@ -47,7 +47,7 @@ impl Room {
         }
 
         // I add the type here because othwerise the clone() doesn't know which type it is.
-        let created_room: Result<Room, diesel::result::Error> 
+        let created_room: Result<Room, diesel::result::Error>
                 = diesel::insert(&new_room)
                     .into(rooms::table)
                     .get_result(conn);
@@ -60,6 +60,22 @@ impl Room {
             Err(_) => {
                 Err(Failure(Status::InternalServerError))
             }
+        }
+    }
+
+    #[inline]
+    pub fn update(conn: &PgConnection, room: &Room) -> Result<Room, Failure> {
+        use diesel::prelude::*;
+        use schema::rooms::dsl::*;
+
+        let result: Result<Room, diesel::result::Error> =
+            diesel::update(room)
+            .set(description.eq(room.description.clone()))
+            .get_result(conn);
+
+        match result {
+            Ok(updated_room) => Ok(updated_room),
+            Err(_) => Err(Failure(Status::InternalServerError))
         }
     }
 

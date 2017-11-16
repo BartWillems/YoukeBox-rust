@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
-use models::Video;
+use video::Video;
 use room::Room;
 use std::{thread, time};
 use schema;
@@ -38,13 +38,13 @@ pub fn play_current_video(conn: &PgConnection, room: &Room) -> bool {
                 .execute(conn)
                 .expect("Unable to start playing the current video.");
 
-            println!("Start playing: [{}] With ID: [{}] and duration: [{}] in room: [{}].", 
-                &video.title, 
-                &video.id, 
+            println!("Start playing: [{}] With ID: [{}] and duration: [{}] in room: [{}].",
+                &video.title,
+                &video.id,
                 &video.duration,
                 &room.name);
 
-            PLAYLIST_THREADS.lock().unwrap().insert(room.id, VideoStatus::Play);  
+            PLAYLIST_THREADS.lock().unwrap().insert(room.id, VideoStatus::Play);
 
             let now = SystemTime::now();
             let mut playing: bool = true;

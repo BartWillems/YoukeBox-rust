@@ -1,9 +1,6 @@
-// THIS IS NOT YET INCLUDED (23/10/2017)
-
 use super::schema::videos;
 use room::Room;
 use std::time::SystemTime;
-
 
 // Nullable SQL types should be an Option struct
 #[derive(Serialize, Deserialize)]

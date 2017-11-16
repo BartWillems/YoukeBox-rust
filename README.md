@@ -5,7 +5,7 @@ This is the YoukeBox backend, written in rust.
 ## What is `The YoukeBox`?
 
 The YoukeBox is an application that multiple people can use to build music playlists.
-Users can create a music-room and submit songs from youtube to that room. 
+Users can create a music-room and submit songs from youtube to that room.
 
 ## Routes
 
@@ -13,7 +13,7 @@ Each route has a prefix: "/api/$version/"
 
 **GET**
 
-* /rooms 
+* /rooms
     * Display every room
 * /rooms?\<room\>
     * Search for rooms with a query. eg: /rooms?name=death
