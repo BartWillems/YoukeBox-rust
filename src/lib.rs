@@ -5,7 +5,7 @@
 #![recursion_limit="128"]
 
 #[macro_use] extern crate diesel;
-#[macro_use] extern crate diesel_codegen;
+// #[macro_use] extern crate diesel_infer_schema;
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate lazy_static;
 
@@ -87,10 +87,15 @@ pub fn establish_connection() -> PgConnection {
 pub fn init_pool() -> Pool {
 	dotenv().ok();
 
+
+
 	let database_url = env::var("DATABASE_URL")
 		.expect("DATABASE_URL must be set");
 
-	let config = r2d2::Config::default();
-	let manager = ConnectionManager::<PgConnection>::new(database_url);
-	r2d2::Pool::new(config, manager).expect("db pool")
+    let manager = ConnectionManager::<PgConnection>::new(database_url);
+    r2d2::Pool::builder().build(manager).expect("Failed to creat db pool")
+
+	// let config = r2d2::Config::default();
+	// let manager = ConnectionManager::<PgConnection>::new(database_url);
+	// r2d2::Pool::new(config, manager).expect("db pool")
 }

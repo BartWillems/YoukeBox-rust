@@ -1,9 +1,6 @@
--- Your SQL goes here
-CREATE EXTENSION IF NOT EXISTS citext;
-
 CREATE TABLE rooms (
     id SERIAL PRIMARY KEY,
-    name citext NOT NULL UNIQUE,
+    name VARCHAR NOT NULL UNIQUE,
     description VARCHAR
 );
 
@@ -21,7 +18,7 @@ CREATE TABLE videos (
 
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
-    username citext NOT NULL UNIQUE,
+    username VARCHAR NOT NULL UNIQUE,
     password VARCHAR NOT NULL,
     added_on TIMESTAMP NOT NULL DEFAULT now(),
     updated_at TIMESTAMP DEFAULT NULL

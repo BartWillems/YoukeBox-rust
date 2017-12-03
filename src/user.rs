@@ -60,8 +60,8 @@ impl User {
             }
         };
 
-        let result = diesel::insert(&new_user)
-                        .into(users::table)
+        let result = diesel::insert_into(users::table)
+                        .values(&new_user)
                         .get_result(conn);
 
         match result {

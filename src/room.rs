@@ -48,8 +48,8 @@ impl Room {
 
         // I add the type here because othwerise the clone() doesn't know which type it is.
         let created_room: Result<Room, diesel::result::Error>
-                = diesel::insert(&new_room)
-                    .into(rooms::table)
+                = diesel::insert_into(rooms::table)
+                    .values(&new_room)
                     .get_result(conn);
 
         match created_room {

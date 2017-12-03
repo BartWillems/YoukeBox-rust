@@ -1,9 +1,7 @@
-infer_schema!("dotenv:DATABASE_URL");
-
 table! {
     rooms (id) {
         id -> Int4,
-        name -> Citext,
+        name -> Varchar,
         description -> Nullable<Varchar>,
     }
 }
@@ -11,7 +9,7 @@ table! {
 table! {
     users (id) {
         id -> Int4,
-        username -> Citext,
+        username -> Varchar,
         password -> Varchar,
         added_on -> Timestamp,
         updated_at -> Nullable<Timestamp>,

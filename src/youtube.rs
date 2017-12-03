@@ -227,8 +227,9 @@ impl YoutubeVideo {
             videos.push(new_video);
         }
 
-        let result = diesel::insert(&videos).into(videos::table)
-            .get_results(conn);
+        let result = diesel::insert_into(videos::table)
+                        .values(&videos)
+                        .get_results(conn);
 
         match result {
             Ok(result) => {
