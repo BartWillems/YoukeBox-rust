@@ -33,6 +33,7 @@ fn main() {
             add_video,
             skip_song_in_room,
             show_rooms,
+            search_rooms,
             add_room,
             delete_room])
         .catch(errors![bad_request, not_found, conflict, internal_error])

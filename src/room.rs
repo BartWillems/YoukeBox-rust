@@ -68,10 +68,12 @@ impl Room {
         use diesel::prelude::*;
         use schema::rooms::dsl::*;
 
-        let result: Result<Room, diesel::result::Error> =
-            diesel::update(room)
-            .set(description.eq(room.description.clone()))
-            .get_result(conn);
+        let result = diesel::update(rooms)
+                    .set((
+                        description.eq(room.description.clone()),
+                        name.eq(room.name.clone())
+                    ))
+                    .get_result(conn);
 
         match result {
             Ok(updated_room) => Ok(updated_room),
@@ -125,7 +127,9 @@ impl Room {
 
         match query {
             Some(query) => {
-                result = rooms.filter(name.like(format!("%{}%", query)))
+                result = rooms.filter(
+                            name.ilike(format!("%{}%", query.to_lowercase()))
+                        )
                         .order(name.desc())
                         .load::<Room>(conn);
             },

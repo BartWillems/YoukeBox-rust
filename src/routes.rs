@@ -3,7 +3,7 @@
 use DbConn;
 use models::HttpStatus;
 use rocket::http::RawStr;
-use rocket::response::{status, Failure};
+use rocket::response::{status, Failure, content};
 use rocket_contrib::Json;
 use serde_json;
 
@@ -15,25 +15,26 @@ use youtube::*;
 
 // Youtube queries
 #[get("/youtube/<query>")]
-fn search_video(query: &RawStr) -> Option<String> {
+fn search_video(query: &RawStr) -> Option<content::Json<String>> {
     let res = YoutubeVideo::search(query);
 
     match res {
-        Some(res)   => Some(res),
+        Some(res)   => Some(content::Json(res)),
         None        => None,
     }
 }
 
 // Rooms
-#[get("/rooms?<room>")]
-fn show_rooms(conn: DbConn, room: Option<SearchRoom>) -> Json<Vec<Room>> {
-    let rooms: Vec<Room>;
-    if let Some(r) = room {
-        rooms = Room::all(&conn, Some(r.name)).unwrap();
-    } else {
-        rooms = Room::all(&conn, None).unwrap();
-    }
+#[get("/rooms")]
+fn show_rooms(conn: DbConn) -> Json<Vec<Room>> {
+    let rooms = Room::all(&conn, None).unwrap();
+    Json(rooms)
+}
 
+
+#[get("/rooms?<room>")]
+fn search_rooms(conn: DbConn, room: SearchRoom) -> Json<Vec<Room>> {
+    let rooms = Room::all(&conn, Some(room.name)).unwrap();
     Json(rooms)
 }
 
