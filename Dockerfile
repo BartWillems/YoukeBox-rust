@@ -3,9 +3,7 @@ MAINTAINER Bart Willems
 LABEL Vendor="CentOS" \
       License=GPLv3
 
-RUN yum install -y postgresql   \
-        postgresql-devel    \
-        postgresql-libs     \
+RUN yum install -y postgresql-devel   \
         epel-release        \
         file sudo gcc       \
         openssl-devel
