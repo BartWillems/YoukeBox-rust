@@ -5,5 +5,5 @@ Requires=postgresql.service
 
 [Service]
 Type=simple
-ExecStart=/opt/youkebox/release/youkebox
+ExecStart=/opt/youkebox/bin/youkebox
 Environment="ROCKET_ENV=production"
