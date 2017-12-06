@@ -12,7 +12,7 @@ use youkebox::init_pool;
 use youkebox::routes::*;
 use youkebox::player::init_playlist_listener;
 
-use self::rocket::http::Method;
+use rocket::http::Method;
 
 fn main() {
     // Start playing every playlist for every room

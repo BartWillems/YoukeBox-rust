@@ -5,7 +5,6 @@
 #![recursion_limit="128"]
 
 #[macro_use] extern crate diesel;
-// #[macro_use] extern crate diesel_infer_schema;
 #[macro_use] extern crate serde_derive;
 #[macro_use] extern crate lazy_static;
 
