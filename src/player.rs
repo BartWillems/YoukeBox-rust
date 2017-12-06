@@ -53,6 +53,17 @@ pub fn play_current_video(conn: &PgConnection, room: &Room) -> bool {
             // Playing will be set to false if either the timer has run out
             // Or when someone skips the song by setting the PLAYLIST_THREADS[ROOM_NAME] to something other than "play"
             while playing {
+
+                // Check if someone tried to skip the video
+                match PLAYLIST_THREADS.lock().unwrap().get(&room.id) {
+                    Some(status) => {
+                        playing = handle_video_event(status);
+                    },
+                    None => {
+                        PLAYLIST_THREADS.lock().unwrap().insert(room.id, VideoStatus::Play);
+                    }
+                }
+
                 // Check if the video has ran out of time
                 match now.elapsed() {
                     Ok(elapsed) => {
@@ -63,16 +74,6 @@ pub fn play_current_video(conn: &PgConnection, room: &Room) -> bool {
                     Err(e) => {
                         playing = false;
                         println!("SystemTime elapsed error: {}", e);
-                    }
-                }
-
-                // Check if someone tried to skip the video
-                match PLAYLIST_THREADS.lock().unwrap().get(&room.id) {
-                    Some(status) => {
-                        playing = handle_video_event(status);
-                    },
-                    None => {
-                        PLAYLIST_THREADS.lock().unwrap().insert(room.id, VideoStatus::Play);
                     }
                 }
 
