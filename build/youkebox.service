@@ -1,0 +1,9 @@
+[Unit]
+Description=YoukeBox backend server
+Documentation=https://github.com/BartWillems/YoukeBox-rust
+Requires=postgresql.service
+
+[Service]
+Type=simple
+ExecStart=/opt/youkebox/release/youkebox
+Environment="ROCKET_ENV=production"
