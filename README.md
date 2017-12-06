@@ -64,3 +64,9 @@ I will add the following structs with the following impl methods in the near fut
 
 * video.rs
     * add_to_playlist(room) -> (?)
+
+
+## Running in production
+```
+ROCKET_PORT=8000 ROCKET_ENV=production cargo run
+```

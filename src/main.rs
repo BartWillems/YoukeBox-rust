@@ -27,7 +27,9 @@ fn main() {
 
     rocket::ignite()
         .manage(init_pool())
+        .mount("/", routes![index])
         .mount("/api/v1", routes![
+            api_index,
             get_playlist,
             search_video,
             add_video,

@@ -202,14 +202,13 @@ impl YoutubeVideo {
         );
 
         let resp = reqwest::get(&url);
-        let mut content;
+        let mut content = String::new();
 
         match resp {
             Ok(mut resp) => {
-                content = String::new();
                 resp.read_to_string(&mut content).unwrap();
             },
-            Err(_) => content = String::new(),
+            Err(_) => return Err(Failure(Status::InternalServerError))
         }
 
         let result: YoutubeVideosDetailed = serde_json::from_str(&content).unwrap();

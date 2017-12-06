@@ -109,7 +109,6 @@ pub fn play_video_thread(room: Room) {
             let mut result;
             let c = establish_connection();
 
-            println!("Room name: {}", room.name.clone());
             loop {
                 result = play_current_video(&c, &room);
 

@@ -3,7 +3,7 @@
 use DbConn;
 use models::HttpStatus;
 use rocket::http::RawStr;
-use rocket::response::{status, Failure, content};
+use rocket::response::{status, Failure, content, Redirect};
 use rocket_contrib::Json;
 use serde_json;
 
@@ -12,6 +12,21 @@ use playlist::*;
 use room::*;
 use video::*;
 use youtube::*;
+
+#[get("/")]
+fn index() -> Redirect {
+    Redirect::to("/api/v1/")
+}
+
+#[get("/")]
+fn api_index() -> &'static str {
+    "
+    You've arrived at the api endpoint 👌👌👌
+
+    Go check out the documentation at our github page:
+    https://github.com/BartWillems/YoukeBox-rust
+    "
+}
 
 // Youtube queries
 #[get("/youtube/<query>")]
