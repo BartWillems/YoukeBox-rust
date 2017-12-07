@@ -7,3 +7,4 @@ Requires=postgresql.service
 Type=simple
 ExecStart=/opt/youkebox/bin/youkebox
 Environment="ROCKET_ENV=production"
+WorkingDirectory=/opt/youkebox
