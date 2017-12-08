@@ -33,6 +33,7 @@ RUN fpm -s dir -t rpm \
     --description "YoukeBox backend" \
     --version 0.1.0 \
     --architecture x86_64 \
+    --after-install build/post_install.sh \
     --config-files /opt/youkebox/.env \
     --config-files /opt/youkebox/Rocket.toml \
     target/release/youkebox=/opt/youkebox/bin/youkebox \
