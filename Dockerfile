@@ -26,6 +26,8 @@ YOUTUBE_API_KEY=123456789" >> .env
 USER root
 RUN cargo build --release
 
+RUN strip target/release/youkebox
+
 # Package it to rpm
 # Outputs: $name-$version-$build.$arch.rpm
 RUN fpm -s dir -t rpm \
