@@ -1,5 +1,4 @@
 FROM centos:7
-MAINTAINER Bart Willems
 LABEL Vendor="CentOS" \
       License=GPLv3
 

@@ -1,5 +1,4 @@
-extern crate diesel;
-
+use diesel;
 use diesel::pg::PgConnection;
 use rocket::http::Status;
 use rocket::response::Failure;
@@ -32,6 +31,7 @@ impl Room {
     #[inline]
     pub fn create(conn: &PgConnection, mut new_room: NewRoom) -> Result<Room, Failure> {
         use diesel::prelude::*;
+        use diesel::result::Error;
 
         new_room.name = new_room.name.trim().to_string();
 
@@ -47,7 +47,7 @@ impl Room {
         }
 
         // I add the type here because othwerise the clone() doesn't know which type it is.
-        let created_room: Result<Room, diesel::result::Error>
+        let created_room: Result<Room, Error>
                 = diesel::insert_into(rooms::table)
                     .values(&new_room)
                     .get_result(conn);

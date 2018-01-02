@@ -1,13 +1,15 @@
-extern crate diesel;
-extern crate bcrypt;
-
+use diesel;
+use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use lower;
+use regex::Regex;
 use rocket::http::Status;
 use rocket::response::Failure;
-use self::bcrypt::{DEFAULT_COST, hash, verify};
+use bcrypt::{hash, verify, DEFAULT_COST};
 use std::time::SystemTime;
-use super::schema::users;
+
+use schema::users::dsl::*;
+use schema::users;
 
 #[derive(Queryable, Identifiable)]
 pub struct User {
@@ -18,9 +20,8 @@ pub struct User {
     pub updated_at: Option<SystemTime>,
 }
 
-#[derive(Insertable)]
-#[derive(Deserialize)]
-#[table_name="users"]
+#[derive(Insertable, Deserialize)]
+#[table_name = "users"]
 pub struct NewUser {
     pub username: String,
     pub password: String,
@@ -31,17 +32,13 @@ impl User {
         let name = name.trim();
 
         if name.is_empty() {
-            return Err("Name cannot be empty.".to_string());
+            return Err(String::from("Name cannot be empty."));
         }
 
-        if name.len() > 20 {
-            return Err("Name must not exceed 20 characters.".to_string());
-        }
+        let regex = Regex::new(r"^[[:word:]]{3,20}$").unwrap();
 
-        for c in name.chars() {
-            if !c.is_alphanumeric() && c != ' ' && c !=  '_' {
-                return Err(format!("Illegal character in name: {}", c).to_string());
-            }
+        if !regex.is_match(name) {
+            return Err(String::from("Invalid username."));
         }
 
         Ok(name.to_string())
@@ -53,7 +50,7 @@ impl User {
         match hash(&new_user.password[..], DEFAULT_COST) {
             Ok(hashed) => {
                 new_user.password = hashed;
-            },
+            }
             Err(e) => {
                 println!("Errow while hasing a password: {}", e);
                 return Err(Failure(Status::InternalServerError));
@@ -61,26 +58,20 @@ impl User {
         };
 
         let result = diesel::insert_into(users::table)
-                        .values(&new_user)
-                        .get_result(conn);
+            .values(&new_user)
+            .get_result(conn);
 
         match result {
-            Ok(result) => {
-                Ok(result)
-            },
-            Err(_) => {
-                Err(Failure(Status::InternalServerError))
-            }
+            Ok(result) => Ok(result),
+            Err(_) => Err(Failure(Status::InternalServerError)),
         }
     }
 
     // Verifies the user's password
     pub fn authenticate(conn: &PgConnection, user: &User) -> Result<bool, Failure> {
-        use diesel::prelude::*;
-        use schema::users::dsl::*;
-
-        let result = users.filter(lower(username).eq(user.username.to_lowercase()))
-                    .first::<User>(conn);
+        let result = users
+            .filter(lower(username).eq(user.username.to_lowercase()))
+            .first::<User>(conn);
 
         if result.is_err() {
             return Err(Failure(Status::InternalServerError));
@@ -88,7 +79,7 @@ impl User {
 
         match verify(&result.unwrap().password_hash[..], &user.password_hash[..]) {
             Ok(_) => Ok(true),
-            Err(_)  => Ok(false)
+            Err(_) => Ok(false),
         }
     }
 
@@ -100,9 +91,7 @@ impl User {
         let result = users.filter(id.eq(user_id)).first::<User>(conn);
 
         match result {
-            Ok(result) => {
-                Ok(result)
-            },
+            Ok(result) => Ok(result),
             Err(e) => {
                 println!("Could not find user with id: {}", e);
                 Err(Failure(Status::NotFound))
@@ -118,9 +107,7 @@ impl User {
         let result = users.load::<User>(conn);
 
         match result {
-            Ok(result) => {
-                Ok(result)
-            },
+            Ok(result) => Ok(result),
             Err(e) => {
                 println!("Error while fetching the users: {}", e);
                 Err(Failure(Status::InternalServerError))

@@ -11,11 +11,13 @@
 extern crate rocket_contrib;
 extern crate rocket_cors;
 
+extern crate bcrypt;
 extern crate dotenv;
 extern crate r2d2;
 extern crate r2d2_diesel;
 extern crate rocket;
 extern crate serde_json;
+extern crate regex;
 extern crate reqwest;
 
 use diesel::prelude::*;

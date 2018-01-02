@@ -24,6 +24,7 @@ fn main() {
         allow_credentials: true,
         ..Default::default()
     };
+    
 
     rocket::ignite()
         .manage(init_pool())
