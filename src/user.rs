@@ -8,7 +8,6 @@ use rocket::response::Failure;
 use bcrypt::{hash, verify, DEFAULT_COST};
 use std::time::SystemTime;
 
-use schema::users::dsl::*;
 use schema::users;
 
 #[derive(Queryable, Identifiable)]
@@ -69,6 +68,8 @@ impl User {
 
     // Verifies the user's password
     pub fn authenticate(conn: &PgConnection, user: &User) -> Result<bool, Failure> {
+        use schema::users::dsl::*;
+
         let result = users
             .filter(lower(username).eq(user.username.to_lowercase()))
             .first::<User>(conn);

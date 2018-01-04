@@ -181,7 +181,7 @@ impl YoutubeVideo {
         use reqwest;
         use serde_json;
         use diesel;
-        use diesel::LoadDsl;
+        use diesel::RunQueryDsl;
 
         let mut videos: Vec<NewVideo> = Vec::new();
         let id_list = video_id.join(",");
