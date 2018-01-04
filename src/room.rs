@@ -1,5 +1,6 @@
 use diesel;
 use diesel::pg::PgConnection;
+use regex::Regex;
 use rocket::http::Status;
 use rocket::response::Failure;
 use super::schema::rooms;
@@ -39,11 +40,10 @@ impl Room {
             return Err(Failure(Status::BadRequest));
         }
 
-        // Only allow  [a-Z], [0-9], ' ' & '_'
-        for c in new_room.name.chars() {
-            if !c.is_alphanumeric() && c != ' ' && c !=  '_' {
-                return Err(Failure(Status::BadRequest));
-            }
+        let regex = Regex::new(r"^[[:word:]]{3,20}$").unwrap();
+
+        if !regex.is_match(&new_room.name) {
+            return Err(Failure(Status::BadRequest));
         }
 
         // I add the type here because othwerise the clone() doesn't know which type it is.
@@ -67,6 +67,12 @@ impl Room {
     pub fn update(conn: &PgConnection, room: &Room) -> Result<Room, Failure> {
         use diesel::prelude::*;
         use schema::rooms::dsl::*;
+
+        let regex = Regex::new(r"^[[:word:]]{3,20}$").unwrap();
+
+        if !regex.is_match(&room.name) {
+            return Err(Failure(Status::BadRequest));
+        }
 
         let result = diesel::update(rooms)
                     .set((
