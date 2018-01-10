@@ -6,4 +6,8 @@
 **/*.rs.bk
 **/*.directory
 
+# Editors
+**/*.swp
+
 .env
+Rocket.toml

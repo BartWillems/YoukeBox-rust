@@ -48,48 +48,48 @@ pub struct DbConn(pub r2d2::PooledConnection<ConnectionManager<PgConnection>>);
 sql_function!(lower, lower_t, (a: types::VarChar) -> types::VarChar);
 
 lazy_static! {
-	static ref API_KEY: &'static str = dotenv!("YOUTUBE_API_KEY");
-	static ref API_URL: &'static str = "https://www.googleapis.com/youtube/v3";
-	pub static ref APPLICATION_URL: &'static str = dotenv!("APPLICATION_URL");
+    static ref API_KEY: &'static str = dotenv!("YOUTUBE_API_KEY");
+    static ref API_URL: &'static str = "https://www.googleapis.com/youtube/v3";
+    pub static ref APPLICATION_URL: &'static str = dotenv!("APPLICATION_URL");
 }
 
 // Return a single connection from the db pool
 impl<'a, 'r> FromRequest<'a, 'r> for DbConn {
-	type Error = ();
+    type Error = ();
 
-	fn from_request(request: &'a Request<'r>) -> request::Outcome<DbConn, ()> {
-		let pool = request.guard::<State<Pool>>()?;
-		match pool.get() {
-			Ok(conn) => Outcome::Success(DbConn(conn)),
-			Err(_) => Outcome::Failure((Status::ServiceUnavailable, ()))
-		}
-	}
+    fn from_request(request: &'a Request<'r>) -> request::Outcome<DbConn, ()> {
+        let pool = request.guard::<State<Pool>>()?;
+        match pool.get() {
+            Ok(conn) => Outcome::Success(DbConn(conn)),
+            Err(_) => Outcome::Failure((Status::ServiceUnavailable, ()))
+        }
+    }
 }
 
 impl Deref for DbConn {
-	type Target = PgConnection;
+    type Target = PgConnection;
 
-	fn deref(&self) -> &Self::Target {
-		&self.0
-	}
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 pub fn establish_connection() -> PgConnection {
-	dotenv().ok();
+    dotenv().ok();
 
-	let database_url = env::var("DATABASE_URL")
-		.expect("DATABASE_URL must be set");
+    let database_url = env::var("DATABASE_URL")
+        .expect("DATABASE_URL must be set");
 
-	PgConnection::establish(&database_url)
-		.expect(&format!("Error connecting to {}", database_url))
+    PgConnection::establish(&database_url)
+        .expect(&format!("Error connecting to {}", database_url))
 }
 
 
 pub fn init_pool() -> Pool {
-	dotenv().ok();
+    dotenv().ok();
 
-	let database_url = env::var("DATABASE_URL")
-		.expect("DATABASE_URL must be set");
+    let database_url = env::var("DATABASE_URL")
+        .expect("DATABASE_URL must be set, please ensure the '.env' file exists.");
 
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     r2d2::Pool::builder().build(manager).expect("Failed to creat db pool")
