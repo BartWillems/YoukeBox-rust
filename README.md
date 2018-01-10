@@ -54,6 +54,18 @@ Each route has a prefix: "/api/$version/"
 * Accounts support with room administrators
 * Upvotes & Downvotes
 
+## Compiling & Packaging
+
+This will compile the project
+``` bash
+make
+```
+
+This will attempt to package the compiled project to an rpm & a deb file
+``` bash
+make package
+```
+
 ## Developer notes
 
 I will add the following structs with the following impl methods in the near future
