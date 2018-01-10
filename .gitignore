@@ -9,5 +9,9 @@
 # Editors
 **/*.swp
 
+# Build artifacts
+**/*.deb
+**/*.rpm
+
 .env
 Rocket.toml

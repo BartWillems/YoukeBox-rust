@@ -1,4 +1,4 @@
-NAME=YoukeBox-rust
+NAME=youkebox-rust
 VERSION=0.1.0
 DESCRIPTION="YoukeBox backend"
 ARCH=x86_64
