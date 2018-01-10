@@ -16,7 +16,7 @@ ARCH =x86_64
 all: compile
 
 compile:
-	cp env.dist .env
+	cp .env.dist .env
 	cp Rocket.toml.dist Rocket.toml
 	cargo build --release
 	strip ./target/release/youkebox
