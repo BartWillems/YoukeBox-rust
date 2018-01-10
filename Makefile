@@ -1,7 +1,17 @@
-NAME=youkebox-rust
-VERSION=0.1.0
-DESCRIPTION="YoukeBox backend"
-ARCH=x86_64
+# YoukeBox Makefile
+#
+# This program is free software; you can redistribute
+# it and/or modify it under the terms of the GNU
+# General Public License …
+
+SHELL = /bin/sh
+
+srcdir = .
+
+NAME  = youkebox-rust
+DESCRIPTION = "YoukeBox backend"
+VERSION =0.1.0
+ARCH =x86_64
 
 all: compile
 
