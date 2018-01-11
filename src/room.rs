@@ -13,6 +13,7 @@ pub struct Room {
     pub id: i32,
     pub name: String,
     pub description: Option<String>,
+    pub is_public: bool,
 }
 
 #[derive(Insertable)]
@@ -21,6 +22,7 @@ pub struct Room {
 pub struct NewRoom {
     pub name: String,
     pub description: Option<String>,
+    pub is_public: bool,
 }
 
 #[derive(FromForm)]
@@ -77,7 +79,8 @@ impl Room {
         let result = diesel::update(rooms)
                     .set((
                         description.eq(room.description.clone()),
-                        name.eq(room.name.clone())
+                        name.eq(room.name.clone()),
+                        is_public.eq(room.is_public.clone()),
                     ))
                     .get_result(conn);
 

@@ -3,6 +3,7 @@ table! {
         id -> Int4,
         name -> Varchar,
         description -> Nullable<Varchar>,
+        is_public -> Bool,
     }
 }
 
@@ -31,3 +32,9 @@ table! {
 }
 
 joinable!(videos -> rooms (room_id));
+
+allow_tables_to_appear_in_same_query!(
+    rooms,
+    users,
+    videos,
+);

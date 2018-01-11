@@ -1,7 +1,8 @@
 CREATE TABLE rooms (
     id SERIAL PRIMARY KEY,
     name VARCHAR NOT NULL UNIQUE,
-    description VARCHAR
+    description VARCHAR,
+    is_public BOOLEAN NOT NULL DEFAULT 't'
 );
 
 CREATE TABLE videos (

@@ -13,3 +13,4 @@ log = "normal"
 [production]
 address = "0.0.0.0"
 log = "critical"
+secret_key = "please_enter_a_secret_key"
