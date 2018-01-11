@@ -23,13 +23,13 @@ compile:
 
 TMPDIR := $(shell mktemp -d)
 TARGET := $(TMPDIR)/opt/YoukeBox/
-SYSTEM := $(TMPDIR)/etc/systemd/system/
+SYSTEM := $(TMPDIR)/usr/lib/systemd/system/
 package: compile
 	mkdir -p $(TARGET)/bin
 	mkdir -p $(SYSTEM)
 
 	cp ./target/release/youkebox $(TARGET)/bin
-	cp ./build/youkebox.service $(SYSTEM)/youkebox.service
+	cp ./build/youkebox-backend.service $(SYSTEM)/youkebox-backend.service
 	cp .env $(TARGET)
 	cp Rocket.toml $(TARGET)
 	
