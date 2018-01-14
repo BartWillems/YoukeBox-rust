@@ -28,6 +28,7 @@ package: compile
 	mkdir -p $(TARGET)/bin
 	mkdir -p $(SYSTEM)
 
+	cp -r ./migrations $(TARGET)
 	cp ./target/release/youkebox $(TARGET)/bin
 	cp ./build/youkebox-backend.service $(SYSTEM)/youkebox-backend.service
 	cp .env $(TARGET)

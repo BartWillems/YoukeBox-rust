@@ -6,7 +6,7 @@ readonly WORKDIR='/opt/youkebox'
 
 which diesel > /dev/null 2>&1 || {
     echo 'diesel not found. Not running database migrations.'
-    echo 'Install diesel using "cargo install diesel".'
+    echo 'Install diesel using "cargo install diesel_cli --no-default-features --features postgres".'
     exit 1
 }
 

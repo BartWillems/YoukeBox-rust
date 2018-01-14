@@ -80,7 +80,7 @@ impl Room {
                     .set((
                         description.eq(room.description.clone()),
                         name.eq(room.name.clone()),
-                        is_public.eq(room.is_public.clone()),
+                        is_public.eq(room.is_public),
                     ))
                     .get_result(conn);
 
