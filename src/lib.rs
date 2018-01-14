@@ -48,9 +48,7 @@ pub struct DbConn(pub r2d2::PooledConnection<ConnectionManager<PgConnection>>);
 sql_function!(lower, lower_t, (a: types::VarChar) -> types::VarChar);
 
 lazy_static! {
-    static ref API_KEY: &'static str = dotenv!("YOUTUBE_API_KEY");
     static ref API_URL: &'static str = "https://www.googleapis.com/youtube/v3";
-    pub static ref APPLICATION_URL: &'static str = dotenv!("APPLICATION_URL");
 }
 
 // Return a single connection from the db pool

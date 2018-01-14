@@ -122,11 +122,15 @@ impl YoutubeVideo {
     #[inline]
     pub fn search(query: &str) -> Option<String> {
         use reqwest;
+        use std::env;
+
+        let api_key = env::var("YOUTUBE_API_KEY")
+            .expect("YOUTUBE_API_KEY must be set, please ensure the '.env' file exists.");
 
         let url = format!(
             "{}/search?type=video&part=id,snippet&maxResults=20&key={}&q={}&videoCategoryId=10",
             *super::API_URL,
-            *super::API_KEY,
+            api_key,
             query);
         let resp = reqwest::get(&url);
 
@@ -144,6 +148,10 @@ impl YoutubeVideo {
     fn get_video_durations(json_videos: Option<&String>) -> Option<String> {
         use serde_json;
         use reqwest;
+        use std::env;
+
+        let api_key = env::var("YOUTUBE_API_KEY")
+            .expect("YOUTUBE_API_KEY must be set, please ensure the '.env' file exists.");
 
         let videos;
         let mut url: String = format!("{}/videos?id=", *super::API_URL).to_string();
@@ -161,7 +169,7 @@ impl YoutubeVideo {
             url = format!("{},{}", url, youtube_video.id.videoId);
         }
 
-        url = format!("{}&part=id,snippet,contentDetails&key={}", url, *super::API_KEY);
+        url = format!("{}&part=id,snippet,contentDetails&key={}", url, api_key);
         let resp = reqwest::get(&url);
 
         match resp {
@@ -182,6 +190,7 @@ impl YoutubeVideo {
         use serde_json;
         use diesel;
         use diesel::RunQueryDsl;
+        use std::env;
 
         let mut videos: Vec<NewVideo> = Vec::new();
         let id_list = video_id.join(",");
@@ -194,11 +203,14 @@ impl YoutubeVideo {
 
         let room = room.unwrap();
 
+        let api_key = env::var("YOUTUBE_API_KEY")
+            .expect("YOUTUBE_API_KEY must be set, please ensure the '.env' file exists.");
+
         let url = format!(
             "{}/videos?id={}&part=id,snippet,contentDetails&key={}",
             *super::API_URL,
             id_list,
-            *super::API_KEY
+            api_key
         );
 
         let resp = reqwest::get(&url);
