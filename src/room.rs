@@ -38,10 +38,6 @@ impl Room {
 
         new_room.name = new_room.name.trim().to_string();
 
-        if new_room.name.is_empty() {
-            return Err(Failure(Status::BadRequest));
-        }
-
         let regex = Regex::new(r"^[[:word:]]{3,20}$").unwrap();
 
         if !regex.is_match(&new_room.name) {
@@ -60,7 +56,7 @@ impl Room {
                 Ok(room)
             },
             Err(_) => {
-                Err(Failure(Status::InternalServerError))
+                Err(Failure(Status::Conflict))
             }
         }
     }
@@ -86,7 +82,7 @@ impl Room {
 
         match result {
             Ok(updated_room) => Ok(updated_room),
-            Err(_) => Err(Failure(Status::InternalServerError))
+            Err(_) => Err(Failure(Status::Conflict))
         }
     }
 
@@ -143,7 +139,7 @@ impl Room {
                         .load::<Room>(conn);
             },
             None => {
-                result = rooms.order(name.desc()).load::<Room>(conn);
+                result = rooms.order(id.asc()).load::<Room>(conn);
             }
         }
 
