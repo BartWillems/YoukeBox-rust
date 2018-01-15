@@ -7,6 +7,8 @@ use rocket::response::Failure;
 use std::time::SystemTime;
 use std::io::Read;
 
+pub struct ApiKey(pub String);
+
 #[allow(non_snake_case)]
 #[derive(Deserialize)]
 pub struct YoutubeVideoId {
@@ -120,12 +122,8 @@ pub struct YoutubeVideosDetailed {
 impl YoutubeVideo {
     /// Returns a list of videos from Youtube
     #[inline]
-    pub fn search(query: &str) -> Option<String> {
+    pub fn search(api_key: String, query: &str) -> Result<String, Failure> {
         use reqwest;
-        use std::env;
-
-        let api_key = env::var("YOUTUBE_API_KEY")
-            .expect("YOUTUBE_API_KEY must be set, please ensure the '.env' file exists.");
 
         let url = format!(
             "{}/search?type=video&part=id,snippet&maxResults=20&key={}&q={}&videoCategoryId=10",
@@ -138,20 +136,16 @@ impl YoutubeVideo {
             Ok(mut resp) => {
                 let mut content = String::new();
                 resp.read_to_string(&mut content).unwrap();
-                YoutubeVideo::get_video_durations(Some(&content))
+                YoutubeVideo::get_video_durations(api_key, Some(&content))
             },
-            Err(_)  => None,
+            Err(_)  => return Err(Failure(Status::InternalServerError)),
         }
     }
 
     // Fetches the duration from Youtube for a list of videos
-    fn get_video_durations(json_videos: Option<&String>) -> Option<String> {
+    fn get_video_durations(api_key: String, json_videos: Option<&String>) -> Result<String, Failure> {
         use serde_json;
         use reqwest;
-        use std::env;
-
-        let api_key = env::var("YOUTUBE_API_KEY")
-            .expect("YOUTUBE_API_KEY must be set, please ensure the '.env' file exists.");
 
         let videos;
         let mut url: String = format!("{}/videos?id=", *super::API_URL).to_string();
@@ -160,12 +154,19 @@ impl YoutubeVideo {
             Some(json_videos) => {
                 videos = Some(json_videos).unwrap();
             },
-            None => return None
+            None => return Err(Failure(Status::InternalServerError))
         }
 
-        let result: YoutubeVideos = serde_json::from_str(videos).unwrap();
+        let result = serde_json::from_str(videos);
+        let videos: YoutubeVideos;
 
-        for youtube_video in &result.items {
+        match result {
+            Ok(result) => videos = result,
+            Err(_) => return Err(Failure(Status::InternalServerError))
+        }
+
+
+        for youtube_video in &videos.items {
             url = format!("{},{}", url, youtube_video.id.videoId);
         }
 
@@ -176,21 +177,20 @@ impl YoutubeVideo {
             Ok(mut resp) => {
                 let mut content = String::new();
                 resp.read_to_string(&mut content).unwrap();
-                Some(content)
+                Ok(content)
             },
-            Err(_)  => None,
+            Err(_)  => return Err(Failure(Status::InternalServerError)),
         }
     }
     // Takes a string of youtube video id's seperated by a comma
     // eg: ssxNqBPRL6Y,_wy4tuFEpz0,...
     // Those videos will be searched on youtube and added to the videos db table
-    pub fn get(conn: &PgConnection, video_id: &[String], room_id: i32) -> Result<Vec<Video>, Failure> {
+    pub fn get(api_key: String, conn: &PgConnection, video_id: &[String], room_id: i32) -> Result<Vec<Video>, Failure> {
         use schema::videos;
         use reqwest;
         use serde_json;
         use diesel;
         use diesel::RunQueryDsl;
-        use std::env;
 
         let mut videos: Vec<NewVideo> = Vec::new();
         let id_list = video_id.join(",");
@@ -202,9 +202,6 @@ impl YoutubeVideo {
         }
 
         let room = room.unwrap();
-
-        let api_key = env::var("YOUTUBE_API_KEY")
-            .expect("YOUTUBE_API_KEY must be set, please ensure the '.env' file exists.");
 
         let url = format!(
             "{}/videos?id={}&part=id,snippet,contentDetails&key={}",

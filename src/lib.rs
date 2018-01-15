@@ -31,8 +31,6 @@ use rocket::request::{self, FromRequest};
 use rocket::{Request, State, Outcome};
 use diesel::types;
 
-type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
-
 pub mod schema;
 pub mod routes;
 pub mod models;
@@ -82,6 +80,7 @@ pub fn establish_connection() -> PgConnection {
         .expect(&format!("Error connecting to {}", database_url))
 }
 
+type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
 pub fn init_pool() -> Pool {
     dotenv().ok();

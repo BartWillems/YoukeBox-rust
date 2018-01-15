@@ -4,6 +4,7 @@ use DbConn;
 use models::HttpStatus;
 use rocket::http::RawStr;
 use rocket::response::{status, Failure, content, Redirect};
+use rocket::State;
 use rocket_contrib::Json;
 use serde_json;
 
@@ -30,12 +31,13 @@ fn api_index() -> &'static str {
 
 // Youtube queries
 #[get("/youtube/<query>")]
-fn search_video(query: &RawStr) -> Option<content::Json<String>> {
-    let res = YoutubeVideo::search(query);
+fn search_video(api_key: State<ApiKey>, query: &RawStr) -> Result<content::Json<String>, Failure> {
+    
+    let res = YoutubeVideo::search(api_key.0.clone(), query);
 
     match res {
-        Some(res)   => Some(content::Json(res)),
-        None        => None,
+        Ok(res) => Ok(content::Json(res)),
+        Err(e)  => Err(e),
     }
 }
 
@@ -70,10 +72,10 @@ fn get_playlist(conn: DbConn, room: i32) -> Result<Json<Playlist>, Failure>{
 
 // Add a song to a room
 #[post("/rooms/<room>", format = "application/json", data = "<id_list>")]
-fn add_video(conn: DbConn, id_list: String, room: i32) -> Result<status::Created<Json<Vec<Video>>>, Failure> {
+fn add_video(api_key: State<ApiKey>, conn: DbConn, id_list: String, room: i32) -> Result<status::Created<Json<Vec<Video>>>, Failure> {
 
     let videos: Vec<String> = serde_json::from_str(&id_list).unwrap();
-    let result = YoutubeVideo::get(&conn, &videos, room);
+    let result = YoutubeVideo::get(api_key.0.clone(), &conn, &videos, room);
 
     match result {
         Ok(result) => {

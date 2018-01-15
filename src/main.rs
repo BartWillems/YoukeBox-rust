@@ -13,6 +13,10 @@ use youkebox::routes::*;
 use youkebox::player::init_playlist_listener;
 
 use rocket::http::Method;
+use rocket::fairing::AdHoc;
+
+use youkebox::youtube::ApiKey;
+
 
 fn main() {
     // Start playing every playlist for every room
@@ -40,5 +44,13 @@ fn main() {
             delete_room])
         .catch(errors![bad_request, not_found, conflict, internal_error])
         .attach(options)
+        .attach(AdHoc::on_attach(|rocket| {
+            let youtube_api_key = rocket.config()
+                    .get_str("YOUTUBE_API_KEY")
+                    .expect("YOUTUBE_API_KEY not set in Rocket.toml.")
+                    .to_string();
+
+            Ok(rocket.manage(ApiKey(youtube_api_key)))
+        }))
         .launch();
 }
