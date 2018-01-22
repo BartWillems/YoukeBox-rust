@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         REPO_SERVER = 'repo.youkebox.be'
-        REPO_PATH   = '/var/vhosts/repo/${BUILD}'
+        REPO_PATH   = "/var/vhosts/repo/${BUILD}"
     }
 
     stages {
@@ -15,14 +15,14 @@ pipeline {
 
         stage('Package') {
             steps {
-                sh 'make package'
+                sh "make package --environment-overrides BUILD_NO=${env.BUILD_NUMBER}"
             }
         }
 
         stage('Deploy') {
             steps {
-                sh 'scp youkebox-*.rpm root@${REPO_SERVER}:${REPO_PATH}/${BUILD}/packages/'
-                sh 'ssh root@${REPO_SERVER} "createrepo --update ${REPO_PATH}/${BUILD}"'
+                sh "scp youkebox-*.rpm root@${REPO_SERVER}:${REPO_PATH}/${BUILD}/packages/"
+                sh "ssh root@${REPO_SERVER} 'createrepo --update ${REPO_PATH}/${BUILD}'"
             }
         }
 

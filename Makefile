@@ -10,10 +10,13 @@ srcdir = .
 
 NAME  = youkebox-rust
 DESCRIPTION = "YoukeBox backend"
-VERSION =0.1.0
-ARCH =x86_64
+VERSION = 0.1.0
+ARCH = x86_64
 
 all: compile
+
+dink:
+	echo $(BUILD)
 
 compile:
 	cp .env.dist .env
@@ -24,7 +27,7 @@ compile:
 TMPDIR := $(shell mktemp -d)
 TARGET := $(TMPDIR)/opt/YoukeBox/
 SYSTEM := $(TMPDIR)/usr/lib/systemd/system/
-package: compile
+package:
 	mkdir -p $(TARGET)/bin
 	mkdir -p $(SYSTEM)
 
@@ -40,6 +43,9 @@ package: compile
 			--description $(DESCRIPTION) \
 			--version $(VERSION) \
 			--architecture $(ARCH) \
+			--iteration $(BUILD_NO) \
+			--depends postgresql-devel \
+			--depends openssl-devel \
 			--force \
 			--after-install build/post_install.sh \
 			--config-files /opt/YoukeBox/.env \
