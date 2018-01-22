@@ -8,7 +8,7 @@ SHELL = /bin/sh
 
 srcdir = .
 
-NAME  = youkebox-rust
+NAME  = youkebox-backend
 DESCRIPTION = "YoukeBox backend"
 VERSION = 0.1.0
 ARCH = x86_64
