@@ -25,7 +25,7 @@ compile:
 	strip ./target/release/youkebox
 
 TMPDIR := $(shell mktemp -d)
-TARGET := $(TMPDIR)/opt/YoukeBox/
+TARGET := $(TMPDIR)/opt/youkebox/
 SYSTEM := $(TMPDIR)/usr/lib/systemd/system/
 package:
 	mkdir -p $(TARGET)/bin
@@ -48,8 +48,8 @@ package:
 			--depends openssl-devel \
 			--force \
 			--after-install build/post_install.sh \
-			--config-files /opt/YoukeBox/.env \
-			--config-files /opt/YoukeBox/Rocket.toml \
+			--config-files /opt/youkebox/.env \
+			--config-files /opt/youkebox/Rocket.toml \
 			--chdir $(TMPDIR) \
 			.; \
 	done
