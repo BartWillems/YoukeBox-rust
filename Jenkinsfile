@@ -2,13 +2,15 @@ pipeline {
     agent any
 
     environment {
-        BUILD = 'dev'
+        REPO_SERVER = 'repo.youkebox.be'
+        REPO_PATH   = '/var/vhosts/repo/${BUILD}'
     }
 
     stages {
         stage('Build') {
             steps {
                 sh 'make'
+                archiveArtifacts artifact: 'target/release', fingerprint: true
             }
         }
 
@@ -20,8 +22,14 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                echo 'scp youkebox-*.rpm root@repo.youkebox.be:/var/vhosts/repo/packages/${BUILD}'
-                echo 'ssh'
+                sh 'scp youkebox-*.rpm root@${REPO_SERVER}:${REPO_PATH}/${BUILD}/packages/'
+                sh 'ssh root@${REPO_SERVER} "createrepo --update ${REPO_PATH}/${BUILD}"'
+            }
+        }
+
+        stage('Cleanup') {
+            steps {
+                sh 'make clean'
             }
         }
     }
