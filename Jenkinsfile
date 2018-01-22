@@ -10,7 +10,7 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'make'
-                archiveArtifacts artifact: 'target/release', fingerprint: true
+                archiveArtifacts artifacts: 'target/release', fingerprint: true
             }
         }
 
