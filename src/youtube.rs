@@ -191,6 +191,7 @@ impl YoutubeVideo {
         use serde_json;
         use diesel;
         use diesel::RunQueryDsl;
+        use player;
 
         let mut videos: Vec<NewVideo> = Vec::new();
         let id_list = video_id.join(",");
@@ -241,6 +242,7 @@ impl YoutubeVideo {
 
         match result {
             Ok(result) => {
+                player::start_playing(room);
                 Ok(result)
             },
             Err(e) => {

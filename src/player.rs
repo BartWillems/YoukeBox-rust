@@ -90,7 +90,10 @@ pub fn play_current_video(conn: &PgConnection, room: &Room) -> bool {
 
             true
         },
-        Err(_) => false,
+        Err(_) => {
+            stop_playing(room.clone());
+            false
+        },
     }
 }
 
@@ -113,6 +116,13 @@ pub fn play_video_thread(room: Room) {
             loop {
                 result = play_current_video(&c, &room);
 
+                if ! PLAYLIST_THREADS.lock().unwrap().contains_key(&room.id) {
+                    println!("Stop playin thread with id: {}", room.id );
+                    break;
+                } else {
+                    println!("Thread still contains {}", room.id);
+                }
+
                 if ! result {
                     // Wait 1 second before trying to play a new video
                     thread::sleep(time::Duration::from_secs(1));
@@ -123,10 +133,12 @@ pub fn play_video_thread(room: Room) {
 }
 
 
-// Loop through every room & start playing their playlists
+// Loop through every room & start playing their playlists IF the playlist isn't empty.
 // At the end of the loop, start the FFA playlist(room None)
 pub fn init_playlist_listener() {
     use self::schema::rooms::dsl::*;
+
+    use playlist::Playlist;
 
     let conn = establish_connection();
 
@@ -134,9 +146,25 @@ pub fn init_playlist_listener() {
                 .expect("Error loading videos");
 
     for room in result {
-        PLAYLIST_THREADS.lock().unwrap().insert(room.id,VideoStatus::Play);
+        if Playlist::is_empty(&conn, &room) {
+            continue;
+        }
+        start_playing(room);
+    }
+}
+
+pub fn start_playing(room: Room) {
+    let mut hashmap = PLAYLIST_THREADS.lock().unwrap();
+
+    if ! hashmap.contains_key(&room.id) {
+        hashmap.insert(room.id,VideoStatus::Play);
         play_video_thread(room);
     }
+}
+
+pub fn stop_playing(room: Room) {
+    println!("Playlist is empty... Stop playing {}", room.name);
+    PLAYLIST_THREADS.lock().unwrap().remove(&room.id);
 }
 
 // Returns a duration string as seconds

@@ -46,6 +46,23 @@ impl Playlist {
             }
         }
     }
+
+    #[inline]
+    pub fn is_empty(conn: &PgConnection, room: &Room) -> bool {
+        use diesel::prelude::*;
+        use schema::videos::dsl::*;
+
+        let result = Video::belonging_to(room)
+                    .filter(played.eq(false))
+                    .first::<Video>(conn);
+                    // .first(conn);
+
+        if result.is_ok() {
+            return false
+        }
+
+        true
+    }
 }
 
 fn get_timestamp(playlist: &[Video]) -> Option<u64> {
