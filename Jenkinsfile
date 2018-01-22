@@ -25,11 +25,11 @@ pipeline {
                 sh "ssh root@${REPO_SERVER} 'createrepo --update ${REPO_PATH}'"
             }
         }
+    }
 
-        stage('Cleanup') {
-            steps {
-                sh 'make clean'
-            }
+    post {
+        always {
+            sh 'make clean'
         }
     }
 }
