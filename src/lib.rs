@@ -29,11 +29,11 @@ use std::ops::Deref;
 use rocket::http::Status;
 use rocket::request::{self, FromRequest};
 use rocket::{Request, State, Outcome};
-use diesel::types;
+use diesel::sql_types;
 
 pub mod schema;
 pub mod routes;
-pub mod models;
+pub mod http;
 pub mod player;
 pub mod user;
 pub mod room;
@@ -43,7 +43,7 @@ pub mod video;
 
 pub struct DbConn(pub r2d2::PooledConnection<ConnectionManager<PgConnection>>);
 
-sql_function!(lower, lower_t, (a: types::VarChar) -> types::VarChar);
+sql_function!(lower, lower_t, (a: sql_types::VarChar) -> sql_types::VarChar);
 
 lazy_static! {
     static ref API_URL: &'static str = "https://www.googleapis.com/youtube/v3";

@@ -1,7 +1,7 @@
 #![allow(unknown_lints, needless_pass_by_value)]
 
 use DbConn;
-use models::HttpStatus;
+use http::HttpStatus;
 use rocket::http::RawStr;
 use rocket::response::{status, Failure, content, Redirect};
 use rocket::State;
