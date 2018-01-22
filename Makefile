@@ -40,6 +40,7 @@ package: compile
 			--description $(DESCRIPTION) \
 			--version $(VERSION) \
 			--architecture $(ARCH) \
+			--force \
 			--after-install build/post_install.sh \
 			--config-files /opt/YoukeBox/.env \
 			--config-files /opt/YoukeBox/Rocket.toml \
