@@ -21,7 +21,7 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sh "scp youkebox-*.rpm root@${REPO_SERVER}:${REPO_PATH}/${BUILD}/packages/"
+                sh "scp youkebox-*.rpm root@${REPO_SERVER}:${REPO_PATH}/packages/"
                 sh "ssh root@${REPO_SERVER} 'createrepo --update ${REPO_PATH}/${BUILD}'"
             }
         }
