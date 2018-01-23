@@ -15,11 +15,13 @@ Each route has a prefix: "/api/$version/"
 
 * /rooms
     * Display every room
+* /rooms/\<id\>
+    * Display room with id: \<id\>
 * /rooms?\<room\>
     * Search for rooms with a query. eg: /rooms?name=death
-* /room/\<id\>
+* /rooms/\<id\>/playlist
     * Display the playlist for the room with id: \<id\>
-* /youtube/\<query\>
+* /youtube?query=slayer
     * Search songs on youtube
 
 **POST**

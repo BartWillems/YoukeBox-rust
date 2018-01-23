@@ -54,6 +54,16 @@ fn search_rooms(conn: DbConn, room: SearchRoom) -> Json<Vec<Room>> {
     Json(rooms)
 }
 
+#[get("/rooms/<id>")]
+fn show_room(conn: DbConn, id: i32) -> Option<Json<Room>> {
+    let room = Room::find(&conn, id);
+
+    match room {
+        Some(r) => return Some(Json(r)),
+        None => return None
+    }
+}
+
 // Return a playlist for a room
 #[get("/rooms/<id>/playlist")]
 fn get_playlist(conn: DbConn, id: i32) -> Result<Json<Playlist>, Failure>{

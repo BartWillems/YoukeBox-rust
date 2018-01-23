@@ -39,6 +39,7 @@ fn main() {
             add_video,
             skip_song_in_room,
             show_rooms,
+            show_room,
             search_rooms,
             add_room,
             delete_room])
