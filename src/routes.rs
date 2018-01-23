@@ -2,8 +2,7 @@
 
 use DbConn;
 use http::HttpStatus;
-use rocket::http::RawStr;
-use rocket::response::{status, Failure, content, Redirect};
+use rocket::response::{content, status, Failure, Redirect};
 use rocket::State;
 use rocket_contrib::Json;
 use serde_json;
@@ -30,10 +29,10 @@ fn api_index() -> &'static str {
 }
 
 // Youtube queries
-#[get("/youtube/<query>")]
-fn search_video(api_key: State<ApiKey>, query: &RawStr) -> Result<content::Json<String>, Failure> {
+#[get("/youtube?<query>")]
+fn search_video(api_key: State<ApiKey>, query: YoutubeQuery) -> Result<content::Json<String>, Failure> {
     
-    let res = YoutubeVideo::search(api_key.0.clone(), query);
+    let res = YoutubeVideo::search(api_key.0.clone(), &query.query[..]);
 
     match res {
         Ok(res) => Ok(content::Json(res)),
@@ -56,9 +55,9 @@ fn search_rooms(conn: DbConn, room: SearchRoom) -> Json<Vec<Room>> {
 }
 
 // Return a playlist for a room
-#[get("/rooms/<room>")]
-fn get_playlist(conn: DbConn, room: i32) -> Result<Json<Playlist>, Failure>{
-    let playlist = Playlist::get(&conn, room);
+#[get("/rooms/<id>/playlist")]
+fn get_playlist(conn: DbConn, id: i32) -> Result<Json<Playlist>, Failure>{
+    let playlist = Playlist::get(&conn, id);
 
     match playlist {
         Ok(playlist) => {

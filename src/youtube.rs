@@ -9,6 +9,11 @@ use std::io::Read;
 
 pub struct ApiKey(pub String);
 
+#[derive(FromForm)]
+pub struct YoutubeQuery{
+    pub query: String,
+}
+
 #[allow(non_snake_case)]
 #[derive(Deserialize)]
 pub struct YoutubeVideoId {

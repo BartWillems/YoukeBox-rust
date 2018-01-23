@@ -50,6 +50,10 @@ fn main() {
                     .expect("YOUTUBE_API_KEY not set in Rocket.toml.")
                     .to_string();
 
+            if youtube_api_key.is_empty() {
+                panic!("Missing YOUTUBE_API_KEY.")
+            }
+
             Ok(rocket.manage(ApiKey(youtube_api_key)))
         }))
         .launch();
