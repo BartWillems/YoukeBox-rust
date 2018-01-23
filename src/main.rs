@@ -42,7 +42,9 @@ fn main() {
             show_room,
             search_rooms,
             add_room,
-            delete_room])
+            delete_room,
+            set_room_picture,
+            get_room_picture])
         .catch(errors![bad_request, not_found, conflict, internal_error])
         .attach(options)
         .attach(AdHoc::on_attach(|rocket| {

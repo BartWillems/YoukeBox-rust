@@ -2,16 +2,24 @@
 
 use DbConn;
 use http::HttpStatus;
-use rocket::response::{content, status, Failure, Redirect};
+use rocket::Data;
+use rocket::response::{content, status, Failure, Redirect, NamedFile};
 use rocket::State;
 use rocket_contrib::Json;
 use serde_json;
+use image;
+use image::GenericImage;
+use std::io;
+use std::fs::File;
+use std::fs;
+use std::path::Path;
 
 use player::skip_video;
 use playlist::*;
 use room::*;
 use video::*;
 use youtube::*;
+
 
 #[get("/")]
 fn index() -> Redirect {
@@ -46,7 +54,6 @@ fn show_rooms(conn: DbConn) -> Json<Vec<Room>> {
     let rooms = Room::all(&conn, None).unwrap();
     Json(rooms)
 }
-
 
 #[get("/rooms?<room>")]
 fn search_rooms(conn: DbConn, room: SearchRoom) -> Json<Vec<Room>> {
@@ -96,6 +103,7 @@ fn add_video(api_key: State<ApiKey>, conn: DbConn, id_list: String, room: i32) -
     }
 }
 
+
 #[post("/rooms", format = "application/json", data = "<room>")]
 fn add_room(conn: DbConn, room: Json<NewRoom>) -> Result<Json<Room>, Failure> {
 
@@ -109,6 +117,62 @@ fn add_room(conn: DbConn, room: Json<NewRoom>) -> Result<Json<Room>, Failure> {
             Err(e)
         }
     }
+}
+
+// TODO:
+// Actually detect if the picture is a picture
+// Create the picture when the room is created
+// The image library can detect if it's an image  when it's loaded from memory
+#[post("/rooms/<id>/picture", data = "<picture>")]
+fn set_room_picture(id: i32, picture: Data) -> io::Result<String> {
+    // use std::io::Read;
+    let picture_url = format!("content/rooms/pictures/{}.png", id).to_string();
+    let picture_path = Path::new(&picture_url);
+
+    // picture.stream()
+
+    // Max amount of bytes for a 512x512 png
+    // let mut buffer = [0; 1048576];
+    // let mut stream = picture.open();
+    // stream.read(&mut buffer);
+
+    // let im = image::load_from_memory(&buffer);
+
+    // Write the paste out to the file and return the URL.
+    picture.stream_to_file(picture_path)?;
+
+    // let im = image::load_from_memory(picture.peek());
+
+    // match im {
+    //     Ok(mut picture) => {
+    //         let fout = &mut File::create(picture_url.clone()).unwrap();
+
+    //         //  picture.resize(512, 512, DINK)
+
+    //         if picture.width() > 512 || picture.height() > 512 {
+    //             picture.crop(0, 0, 512, 512);
+    //         }
+
+    //         picture.save(fout, image::JPEG).unwrap();
+    //     },
+    //     Err(_) => {
+    //         println!("Oh no we are in error");
+    //         fs::remove_file(picture_url.clone()).unwrap();
+    //     }
+    // }
+    
+    Ok(picture_url.clone())
+    
+}
+
+// TODO:
+// Set the picture url in the room table
+// this way, we could do NamedFile::open(Path::new(room.picture))
+// Because right now, we don't know if it's a jpg or png
+#[get("/rooms/<id>/picture")]
+fn get_room_picture(id: i32) -> Option<NamedFile> {
+    let picture_url = format!("content/rooms/pictures/{}", id).to_string();
+    NamedFile::open(Path::new(&picture_url)).ok()
 }
 
 #[put("/rooms", format = "application/json", data = "<room>")]
