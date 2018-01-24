@@ -9,7 +9,6 @@ use rocket_contrib::Json;
 use serde_json;
 use image;
 use image::GenericImage;
-use std::io;
 use std::fs::File;
 use std::fs;
 use std::path::Path;
@@ -123,47 +122,69 @@ fn add_room(conn: DbConn, room: Json<NewRoom>) -> Result<Json<Room>, Failure> {
 // Actually detect if the picture is a picture
 // Create the picture when the room is created
 // The image library can detect if it's an image  when it's loaded from memory
-#[post("/rooms/<id>/picture", data = "<picture>")]
-fn set_room_picture(id: i32, picture: Data) -> io::Result<String> {
+use rocket::http::RawStr;
+use rocket::http::Status;
+#[post("/rooms/<id>/picture/<name>", data = "<picture>")]
+fn set_room_picture(id: i32, name: &RawStr, picture: Data) -> Result<String, Failure> {
     // use std::io::Read;
-    let picture_url = format!("content/rooms/pictures/{}.png", id).to_string();
+
+    let file = name.split(".").collect::<Vec<&str>>();
+    if file.len() < 2 {
+        return Err(Failure(Status::BadRequest))
+    }
+
+    let extension;
+    // Check if the image is the correct extension
+    match file[file.len() -1 ].to_lowercase().as_ref() {
+        "png"  |  
+        "jpeg" | 
+        "webp" => extension = file[file.len() -1 ].to_lowercase(),
+        _ => return Err(Failure(Status::BadRequest))
+    }
+
+    let picture_url = format!("content/rooms/pictures/{}.{}", id, extension).to_string();
     let picture_path = Path::new(&picture_url);
 
-    // picture.stream()
+    let result = picture.stream_to_file(picture_path);
 
-    // Max amount of bytes for a 512x512 png
-    // let mut buffer = [0; 1048576];
-    // let mut stream = picture.open();
-    // stream.read(&mut buffer);
+    match result {
+        Ok(_) => { },
+        Err(_)  => return Err(Failure(Status::InternalServerError))
+    }
 
-    // let im = image::load_from_memory(&buffer);
+    let im = image::open(&picture_path);
 
-    // Write the paste out to the file and return the URL.
-    picture.stream_to_file(picture_path)?;
+    match im {
+        Ok(mut im) => {
+            // Well, something here doesn't work yet...
+            if im.width() > 512 || im.height() > 512 {
+                // Perhaps it's the cropping?
+                im.crop(0, 0, 512, 512);
+                let fout = &mut File::create(&picture_path).unwrap();
 
-    // let im = image::load_from_memory(picture.peek());
-
-    // match im {
-    //     Ok(mut picture) => {
-    //         let fout = &mut File::create(picture_url.clone()).unwrap();
-
-    //         //  picture.resize(512, 512, DINK)
-
-    //         if picture.width() > 512 || picture.height() > 512 {
-    //             picture.crop(0, 0, 512, 512);
-    //         }
-
-    //         picture.save(fout, image::JPEG).unwrap();
-    //     },
-    //     Err(_) => {
-    //         println!("Oh no we are in error");
-    //         fs::remove_file(picture_url.clone()).unwrap();
-    //     }
-    // }
-    
-    Ok(picture_url.clone())
-    
+                match extension.as_ref() {
+                    "png" => {
+                        im.save(fout, image::PNG).unwrap();
+                    },
+                    "jpeg" => {
+                        im.save(fout, image::JPEG).unwrap();
+                    },
+                    "webp" => {
+                        im.save(fout, image::WEBP).unwrap();
+                    },
+                    &_ => return Err(Failure(Status::InternalServerError))
+                }
+            }
+            return Ok(picture_url.clone());
+        },
+        Err(_) => {
+            // Picture is not actually a picture
+            fs::remove_file(picture_url.clone()).unwrap();
+            return Err(Failure(Status::BadRequest))
+        }
+    }
 }
+
 
 // TODO:
 // Set the picture url in the room table
