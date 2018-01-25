@@ -48,6 +48,7 @@ package:
 			--depends openssl-devel \
 			--force \
 			--after-install build/post_install.sh \
+			--config-files /usr/lib/systemd/system/youkebox-backend.service \
 			--config-files /opt/youkebox/.env \
 			--config-files /opt/youkebox/Rocket.toml \
 			--chdir $(TMPDIR) \

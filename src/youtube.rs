@@ -127,7 +127,7 @@ pub struct YoutubeVideosDetailed {
 impl YoutubeVideo {
     /// Returns a list of videos from Youtube
     #[inline]
-    pub fn search(api_key: String, query: &str) -> Result<String, Failure> {
+    pub fn search(api_key: &str, query: &str) -> Result<String, Failure> {
         use reqwest;
 
         let url = format!(
@@ -143,12 +143,12 @@ impl YoutubeVideo {
                 resp.read_to_string(&mut content).unwrap();
                 YoutubeVideo::get_video_durations(api_key, Some(&content))
             },
-            Err(_)  => return Err(Failure(Status::InternalServerError)),
+            Err(_)  => Err(Failure(Status::InternalServerError)),
         }
     }
 
     // Fetches the duration from Youtube for a list of videos
-    fn get_video_durations(api_key: String, json_videos: Option<&String>) -> Result<String, Failure> {
+    fn get_video_durations(api_key: &str, json_videos: Option<&String>) -> Result<String, Failure> {
         use serde_json;
         use reqwest;
 
@@ -184,13 +184,13 @@ impl YoutubeVideo {
                 resp.read_to_string(&mut content).unwrap();
                 Ok(content)
             },
-            Err(_)  => return Err(Failure(Status::InternalServerError)),
+            Err(_)  => Err(Failure(Status::InternalServerError)),
         }
     }
     // Takes a string of youtube video id's seperated by a comma
     // eg: ssxNqBPRL6Y,_wy4tuFEpz0,...
     // Those videos will be searched on youtube and added to the videos db table
-    pub fn get(api_key: String, conn: &PgConnection, video_id: &[String], room_id: i32) -> Result<Vec<Video>, Failure> {
+    pub fn get(api_key: &str, conn: &PgConnection, video_id: &[String], room_id: i32) -> Result<Vec<Video>, Failure> {
         use schema::videos;
         use reqwest;
         use serde_json;

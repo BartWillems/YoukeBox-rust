@@ -9,7 +9,6 @@ use rocket_contrib::Json;
 use serde_json;
 use image;
 use image::GenericImage;
-use std::fs::File;
 use std::fs;
 use std::path::Path;
 
@@ -39,7 +38,7 @@ fn api_index() -> &'static str {
 #[get("/youtube?<query>")]
 fn search_video(api_key: State<ApiKey>, query: YoutubeQuery) -> Result<content::Json<String>, Failure> {
     
-    let res = YoutubeVideo::search(api_key.0.clone(), &query.query[..]);
+    let res = YoutubeVideo::search(&api_key.0.clone(), &query.query[..]);
 
     match res {
         Ok(res) => Ok(content::Json(res)),
@@ -65,8 +64,8 @@ fn show_room(conn: DbConn, id: i32) -> Option<Json<Room>> {
     let room = Room::find(&conn, id);
 
     match room {
-        Some(r) => return Some(Json(r)),
-        None => return None
+        Some(r) => Some(Json(r)),
+        None => None
     }
 }
 
@@ -90,7 +89,7 @@ fn get_playlist(conn: DbConn, id: i32) -> Result<Json<Playlist>, Failure>{
 fn add_video(api_key: State<ApiKey>, conn: DbConn, id_list: String, room: i32) -> Result<status::Created<Json<Vec<Video>>>, Failure> {
 
     let videos: Vec<String> = serde_json::from_str(&id_list).unwrap();
-    let result = YoutubeVideo::get(api_key.0.clone(), &conn, &videos, room);
+    let result = YoutubeVideo::get(&api_key.0.clone(), &conn, &videos, room);
 
     match result {
         Ok(result) => {
@@ -128,7 +127,7 @@ use rocket::http::Status;
 fn set_room_picture(id: i32, name: &RawStr, picture: Data) -> Result<String, Failure> {
     // use std::io::Read;
 
-    let file = name.split(".").collect::<Vec<&str>>();
+    let file = name.split('.').collect::<Vec<&str>>();
     if file.len() < 2 {
         return Err(Failure(Status::BadRequest))
     }
@@ -155,32 +154,22 @@ fn set_room_picture(id: i32, name: &RawStr, picture: Data) -> Result<String, Fai
     let im = image::open(&picture_path);
 
     match im {
-        Ok(mut im) => {
-            // Well, something here doesn't work yet...
+        Ok(im) => {
+            // Image is too big
             if im.width() > 512 || im.height() > 512 {
-                // Perhaps it's the cropping?
-                im.crop(0, 0, 512, 512);
-                let fout = &mut File::create(&picture_path).unwrap();
-
-                match extension.as_ref() {
-                    "png" => {
-                        im.save(fout, image::PNG).unwrap();
-                    },
-                    "jpeg" => {
-                        im.save(fout, image::JPEG).unwrap();
-                    },
-                    "webp" => {
-                        im.save(fout, image::WEBP).unwrap();
-                    },
-                    &_ => return Err(Failure(Status::InternalServerError))
-                }
+                return Err(Failure(Status::BadRequest))
             }
-            return Ok(picture_url.clone());
+            Ok(picture_url.clone())
         },
         Err(_) => {
-            // Picture is not actually a picture
-            fs::remove_file(picture_url.clone()).unwrap();
-            return Err(Failure(Status::BadRequest))
+            // Picture is not actually a picture,
+            // Attempt to remove it
+            let result = fs::remove_file(picture_url.clone());
+
+            match result {
+                Ok(_r) => Err(Failure(Status::BadRequest)),
+                Err(_) => Err(Failure(Status::InternalServerError))
+            }
         }
     }
 }

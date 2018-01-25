@@ -91,7 +91,7 @@ pub fn play_current_video(conn: &PgConnection, room: &Room) -> bool {
             true
         },
         Err(_) => {
-            stop_playing(room.clone());
+            stop_playing(room);
             false
         },
     }
@@ -162,7 +162,7 @@ pub fn start_playing(room: Room) {
     }
 }
 
-pub fn stop_playing(room: Room) {
+pub fn stop_playing(room: &Room) {
     println!("Playlist is empty... Stop playing {}", room.name);
     PLAYLIST_THREADS.lock().unwrap().remove(&room.id);
 }
