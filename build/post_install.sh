@@ -23,3 +23,6 @@ diesel migration run > /dev/null 2>&1 || {
     echo -e "${BLUE}cd ${WORKDIR} && diesel migration run"
     exit 1
 }
+
+# Create the content directory
+mkdir -p $WORKDIR/content/rooms/pictures
