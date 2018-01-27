@@ -108,24 +108,15 @@ fn handle_video_event(status: &VideoStatus) -> bool {
 /// Start a thread to watch a certain playlist
 pub fn play_video_thread(room: Room) {
     thread::Builder::new()
-        .name(room.name.clone())
         .spawn(move || {
-            let mut result;
             let c = establish_connection();
 
             loop {
-                result = play_current_video(&c, &room);
+                play_current_video(&c, &room);
 
                 if ! PLAYLIST_THREADS.lock().unwrap().contains_key(&room.id) {
                     println!("Stop playin thread with id: {}", room.id );
                     break;
-                } else {
-                    println!("Thread still contains {}", room.id);
-                }
-
-                if ! result {
-                    // Wait 1 second before trying to play a new video
-                    thread::sleep(time::Duration::from_secs(1));
                 }
             }
         })
@@ -157,13 +148,12 @@ pub fn start_playing(room: Room) {
     let mut hashmap = PLAYLIST_THREADS.lock().unwrap();
 
     if ! hashmap.contains_key(&room.id) {
-        hashmap.insert(room.id,VideoStatus::Play);
+        hashmap.insert(room.id, VideoStatus::Play);
         play_video_thread(room);
     }
 }
 
 pub fn stop_playing(room: &Room) {
-    println!("Playlist is empty... Stop playing {}", room.name);
     PLAYLIST_THREADS.lock().unwrap().remove(&room.id);
 }
 

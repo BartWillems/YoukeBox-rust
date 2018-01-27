@@ -5,6 +5,7 @@ use http::HttpStatus;
 use rocket::Data;
 use rocket::response::{content, status, Failure, Redirect, NamedFile};
 use rocket::State;
+use rocket::http::{RawStr, Status};
 use rocket_contrib::Json;
 use serde_json;
 use image;
@@ -121,11 +122,13 @@ fn add_room(conn: DbConn, room: Json<NewRoom>) -> Result<Json<Room>, Failure> {
 // Actually detect if the picture is a picture
 // Create the picture when the room is created
 // The image library can detect if it's an image  when it's loaded from memory
-use rocket::http::RawStr;
-use rocket::http::Status;
 #[post("/rooms/<id>/picture/<name>", data = "<picture>")]
 fn set_room_picture(id: i32, name: &RawStr, picture: Data) -> Result<String, Failure> {
-    // use std::io::Read;
+    use establish_connection;
+    let con = establish_connection();
+    if let None = Room::find(&con, id) {
+        return Err(Failure(Status::BadRequest));
+    }
 
     let file = name.split('.').collect::<Vec<&str>>();
     if file.len() < 2 {
