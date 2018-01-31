@@ -45,7 +45,12 @@ fn main() {
             delete_room,
             set_room_picture,
             get_room_picture])
-        .catch(errors![bad_request, not_found, conflict, internal_error])
+        .catch(errors![
+            bad_request, 
+            not_found, 
+            conflict,
+            unsupported_media_type,
+            internal_error])
         .attach(options)
         .attach(AdHoc::on_attach(|rocket| {
             let youtube_api_key = rocket.config()

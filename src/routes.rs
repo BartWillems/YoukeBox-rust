@@ -1,18 +1,20 @@
 #![allow(unknown_lints, needless_pass_by_value)]
 
 use DbConn;
-use http::HttpStatus;
+
+use bytes::BufMut;
 use rocket::Data;
 use rocket::response::{content, status, Failure, Redirect, NamedFile};
 use rocket::State;
-use rocket::http::{RawStr, Status};
+use rocket::http::Status;
 use rocket_contrib::Json;
 use serde_json;
+use std::fs::File;
 use image;
 use image::GenericImage;
-use std::fs;
 use std::path::Path;
 
+use http::HttpStatus;
 use player::skip_video;
 use playlist::*;
 use room::*;
@@ -119,60 +121,51 @@ fn add_room(conn: DbConn, room: Json<NewRoom>) -> Result<Json<Room>, Failure> {
 }
 
 // TODO:
-// Actually detect if the picture is a picture
 // Create the picture when the room is created
-// The image library can detect if it's an image  when it's loaded from memory
-#[post("/rooms/<id>/picture/<name>", data = "<picture>")]
-fn set_room_picture(id: i32, name: &RawStr, picture: Data) -> Result<String, Failure> {
+// Remove the picture when the room is deleted
+#[post("/rooms/<id>/picture", data = "<picture_stream>")]
+fn set_room_picture(id: i32, picture_stream: Data) -> Result<String, Failure> {
     use establish_connection;
     let con = establish_connection();
-    if let None = Room::find(&con, id) {
-        return Err(Failure(Status::BadRequest));
+
+    if  Room::find(&con, id).is_none() {
+        return Err(Failure(Status::NotFound));
     }
 
-    let file = name.split('.').collect::<Vec<&str>>();
-    if file.len() < 2 {
+    // 262144 bytes = max filesize for a 512x512 png
+    let mut buf = Vec::with_capacity(262_144).writer();
+    picture_stream.stream_to(&mut buf).unwrap();
+    
+
+    let im = image::load_from_memory(buf.get_ref());
+    let picture;
+    let image_format;
+    match im {
+        Ok(im) => {
+            picture = im;
+            image_format = image::guess_format(buf.get_ref());
+        },
+        Err(_e) => {
+            return Err(Failure(Status::UnsupportedMediaType))
+        }
+    }
+
+    if picture.width() > 512 || picture.height() > 512 {
         return Err(Failure(Status::BadRequest))
     }
 
-    let extension;
-    // Check if the image is the correct extension
-    match file[file.len() -1 ].to_lowercase().as_ref() {
-        "png"  |  
-        "jpeg" | 
-        "webp" => extension = file[file.len() -1 ].to_lowercase(),
-        _ => return Err(Failure(Status::BadRequest))
-    }
-
-    let picture_url = format!("content/rooms/pictures/{}.{}", id, extension).to_string();
+    let picture_url = format!("content/rooms/pictures/{}", id).to_string();
     let picture_path = Path::new(&picture_url);
 
-    let result = picture.stream_to_file(picture_path);
+    let fout = &mut File::create(&picture_path).unwrap();
+    let result = picture.save(fout, image_format.unwrap());
 
+    
     match result {
-        Ok(_) => { },
-        Err(_)  => return Err(Failure(Status::InternalServerError))
-    }
-
-    let im = image::open(&picture_path);
-
-    match im {
-        Ok(im) => {
-            // Image is too big
-            if im.width() > 512 || im.height() > 512 {
-                return Err(Failure(Status::BadRequest))
-            }
-            Ok(picture_url.clone())
-        },
-        Err(_) => {
-            // Picture is not actually a picture,
-            // Attempt to remove it
-            let result = fs::remove_file(picture_url.clone());
-
-            match result {
-                Ok(_r) => Err(Failure(Status::BadRequest)),
-                Err(_) => Err(Failure(Status::InternalServerError))
-            }
+        Ok(_r) => Ok(format!("/rooms/{}/picture", id)),
+        Err(e) => {
+            println!("Failed to save the picture: {}", e);
+            Err(Failure(Status::InternalServerError))
         }
     }
 }
@@ -249,6 +242,14 @@ fn conflict() -> Json<HttpStatus> {
     Json(HttpStatus{
         status: 409,
         message: "Conflict".to_string(),
+    })
+}
+
+#[error(415)]
+fn unsupported_media_type() -> Json<HttpStatus> {
+    Json(HttpStatus{
+        status: 409,
+        message: "Unsupported Media Type".to_string(),
     })
 }
 

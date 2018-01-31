@@ -12,6 +12,7 @@ extern crate rocket_contrib;
 extern crate rocket_cors;
 
 extern crate bcrypt;
+extern crate bytes;
 extern crate dotenv;
 extern crate image;
 extern crate r2d2;
