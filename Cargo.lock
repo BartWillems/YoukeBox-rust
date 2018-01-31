@@ -1591,6 +1591,7 @@ name = "youkebox"
 version = "0.1.0"
 dependencies = [
  "bcrypt 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bytes 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "clippy 0.0.182 (registry+https://github.com/rust-lang/crates.io-index)",
  "diesel 1.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
