@@ -49,6 +49,7 @@ sql_function!(lower, lower_t, (a: sql_types::VarChar) -> sql_types::VarChar);
 
 lazy_static! {
     static ref API_URL: &'static str = "https://www.googleapis.com/youtube/v3";
+    static ref PICTURES_DIR: &'static str = "content/rooms/pictures";
 }
 
 // Return a single connection from the db pool

@@ -122,7 +122,6 @@ fn add_room(conn: DbConn, room: Json<NewRoom>) -> Result<Json<Room>, Failure> {
 
 // TODO:
 // Create the picture when the room is created
-// Remove the picture when the room is deleted
 #[post("/rooms/<id>/picture", data = "<picture_stream>")]
 fn set_room_picture(id: i32, picture_stream: Data) -> Result<String, Failure> {
     use establish_connection;
@@ -134,8 +133,11 @@ fn set_room_picture(id: i32, picture_stream: Data) -> Result<String, Failure> {
 
     // 262144 bytes = max filesize for a 512x512 png
     let mut buf = Vec::with_capacity(262_144).writer();
-    picture_stream.stream_to(&mut buf).unwrap();
-    
+    let res = picture_stream.stream_to(&mut buf);
+
+    if res.is_err() {
+        return Err(Failure(Status::InternalServerError))
+    }
 
     let im = image::load_from_memory(buf.get_ref());
     let picture;
@@ -154,7 +156,7 @@ fn set_room_picture(id: i32, picture_stream: Data) -> Result<String, Failure> {
         return Err(Failure(Status::BadRequest))
     }
 
-    let picture_url = format!("content/rooms/pictures/{}", id).to_string();
+    let picture_url = format!("{}/{}", *super::PICTURES_DIR, id).to_string();
     let picture_path = Path::new(&picture_url);
 
     let fout = &mut File::create(&picture_path).unwrap();

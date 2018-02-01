@@ -90,18 +90,29 @@ impl Room {
     pub fn delete(conn: &PgConnection, room_id: i32) -> Result<(), Failure> {
         use diesel::prelude::*;
         use schema::rooms::dsl::*;
+        use std::fs;
 
         let result = diesel::delete(rooms.filter(id.eq(room_id)))
                         .execute(conn);
 
         match result {
-            Ok(_result) => {
-                Ok(())
-            },
-            Err(_) => {
-                Err(Failure(Status::InternalServerError))
+            Ok(_) => {},
+            Err(e) =>{
+                 println!("Error delt rom: {}", e);
+                 return Err(Failure(Status::InternalServerError))
             }
         }
+
+        // This currently fails :(
+        // if result.is_err() {
+        //     return Err(Failure(Status::InternalServerError))
+        // }
+
+        let picture_url = format!("{}/{}", *super::PICTURES_DIR, room_id).to_string();
+
+        let _res = fs::remove_file(picture_url);
+
+        Ok(())
     }
 
     // Find & return a room by id
