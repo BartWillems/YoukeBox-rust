@@ -95,18 +95,9 @@ impl Room {
         let result = diesel::delete(rooms.filter(id.eq(room_id)))
                         .execute(conn);
 
-        match result {
-            Ok(_) => {},
-            Err(e) =>{
-                 println!("Error delt rom: {}", e);
-                 return Err(Failure(Status::InternalServerError))
-            }
+        if result.is_err() {
+            return Err(Failure(Status::InternalServerError))
         }
-
-        // This currently fails :(
-        // if result.is_err() {
-        //     return Err(Failure(Status::InternalServerError))
-        // }
 
         let picture_url = format!("{}/{}", *super::PICTURES_DIR, room_id).to_string();
 

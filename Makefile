@@ -15,9 +15,6 @@ ARCH = x86_64
 
 all: compile
 
-dink:
-	echo $(BUILD)
-
 compile:
 	cp .env.dist .env
 	cp Rocket.toml.dist Rocket.toml
