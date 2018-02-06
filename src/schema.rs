@@ -1,6 +1,6 @@
 table! {
     rooms (id) {
-        id -> Int4,
+        id -> Int8,
         name -> Varchar,
         description -> Nullable<Varchar>,
         is_public -> Bool,
@@ -9,7 +9,7 @@ table! {
 
 table! {
     users (id) {
-        id -> Int4,
+        id -> Int8,
         username -> Varchar,
         password -> Varchar,
         added_on -> Timestamp,
@@ -19,11 +19,11 @@ table! {
 
 table! {
     videos (id) {
-        id -> Int4,
+        id -> Int8,
         video_id -> Varchar,
         title -> Varchar,
         description -> Nullable<Varchar>,
-        room_id -> Int4,
+        room_id -> Int8,
         duration -> Varchar,
         played -> Bool,
         added_on -> Timestamp,

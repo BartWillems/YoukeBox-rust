@@ -190,7 +190,7 @@ impl YoutubeVideo {
     // Takes a string of youtube video id's seperated by a comma
     // eg: ssxNqBPRL6Y,_wy4tuFEpz0,...
     // Those videos will be searched on youtube and added to the videos db table
-    pub fn get(api_key: &str, conn: &PgConnection, video_id: &[String], room_id: i32) -> Result<Vec<Video>, Failure> {
+    pub fn get(api_key: &str, conn: &PgConnection, video_id: &[String], room_id: i64) -> Result<Vec<Video>, Failure> {
         use schema::videos;
         use reqwest;
         use serde_json;

@@ -10,7 +10,7 @@ use player::play_video_thread;
 #[derive(Serialize, Deserialize)]
 #[derive(Queryable, Identifiable)]
 pub struct Room {
-    pub id: i32,
+    pub id: i64,
     pub name: String,
     pub description: Option<String>,
     pub is_public: bool,
@@ -87,7 +87,7 @@ impl Room {
     }
 
     #[inline]
-    pub fn delete(conn: &PgConnection, room_id: i32) -> Result<(), Failure> {
+    pub fn delete(conn: &PgConnection, room_id: i64) -> Result<(), Failure> {
         use diesel::prelude::*;
         use schema::rooms::dsl::*;
         use std::fs;
@@ -108,7 +108,7 @@ impl Room {
 
     // Find & return a room by id
     #[inline]
-    pub fn find(conn: &PgConnection, room_id: i32) -> Option<Room> {
+    pub fn find(conn: &PgConnection, room_id: i64) -> Option<Room> {
         use diesel::prelude::*;
         use schema::rooms::dsl::*;
 

@@ -15,7 +15,7 @@ pub struct Playlist {
 
 impl Playlist {
     #[inline]
-    pub fn get(conn: &PgConnection, r_id: i32) -> Result<Playlist, Failure> {
+    pub fn get(conn: &PgConnection, r_id: i64) -> Result<Playlist, Failure> {
         use diesel::prelude::*;
         use schema::videos::dsl::*;
 
@@ -37,7 +37,7 @@ impl Playlist {
                 let timestamp = get_timestamp(&result);
                 Ok(Playlist {
                     videos: result,
-                    timestamp: timestamp
+                    timestamp
                 })
             },
             Err(e) => {
@@ -55,7 +55,6 @@ impl Playlist {
         let result = Video::belonging_to(room)
                     .filter(played.eq(false))
                     .first::<Video>(conn);
-                    // .first(conn);
 
         if result.is_ok() {
             return false
@@ -77,7 +76,7 @@ fn get_timestamp(playlist: &[Video]) -> Option<u64> {
         match elapsed {
             Ok(elapsed) => Some(elapsed.as_secs()),
             Err(e) => {
-                println!("Error while calulcating the playlist timestamp: {:?}", e);
+                println!("Error while calculating the playlist timestamp: {:?}", e);
                 None
             }
         }

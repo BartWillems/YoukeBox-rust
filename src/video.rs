@@ -7,11 +7,11 @@ use std::time::SystemTime;
 #[derive(Queryable, Identifiable, Associations)]
 #[belongs_to(Room)]
 pub struct Video {
-    pub id: i32,
+    pub id: i64,
     pub video_id: String,
     pub title: String,
     pub description: Option<String>,
-    pub room_id: i32,
+    pub room_id: i64,
     pub duration: String,
     pub played: bool,
     pub added_on: SystemTime,
@@ -25,7 +25,7 @@ pub struct NewVideo {
     pub video_id: String,
     pub title: String,
     pub description: Option<String>,
-    pub room_id: i32,
+    pub room_id: i64,
     pub duration: String,
     pub added_on: SystemTime,
 }

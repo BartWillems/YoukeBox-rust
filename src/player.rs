@@ -11,7 +11,7 @@ use std::sync::Mutex;
 use establish_connection;
 
 lazy_static! {
-    static ref PLAYLIST_THREADS: Mutex<HashMap<i32, VideoStatus>> = Mutex::new(HashMap::new());
+    static ref PLAYLIST_THREADS: Mutex<HashMap<i64, VideoStatus>> = Mutex::new(HashMap::new());
 }
 
 enum VideoStatus {
@@ -109,7 +109,7 @@ fn handle_video_event(status: &VideoStatus) -> bool {
 pub fn play_video_thread(room: Room) {
     thread::Builder::new()
         .spawn(move || {
-            let c = establish_connection();
+            let c: PgConnection = establish_connection();
 
             loop {
                 play_current_video(&c, &room);
@@ -131,7 +131,7 @@ pub fn init_playlist_listener() {
 
     use playlist::Playlist;
 
-    let conn = establish_connection();
+    let conn: PgConnection = establish_connection();
 
     let result = rooms.load::<Room>(&conn)
                 .expect("Error loading videos");
@@ -175,7 +175,7 @@ pub fn duration_to_seconds(duration: &str) -> u64 {
 }
 
 
-pub fn skip_video(room: &i32) {
+pub fn skip_video(room: &i64) {
     let mut rooms = PLAYLIST_THREADS.lock().unwrap();
 
     println!("Skipping a song in room [{}]", room);

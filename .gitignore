@@ -8,6 +8,8 @@
 
 # Editors
 **/*.swp
+**/*.iml
+/.idea/
 
 # Build artifacts
 **/*.deb

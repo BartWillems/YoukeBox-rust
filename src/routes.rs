@@ -63,7 +63,7 @@ fn search_rooms(conn: DbConn, room: SearchRoom) -> Json<Vec<Room>> {
 }
 
 #[get("/rooms/<id>")]
-fn show_room(conn: DbConn, id: i32) -> Option<Json<Room>> {
+fn show_room(conn: DbConn, id: i64) -> Option<Json<Room>> {
     let room = Room::find(&conn, id);
 
     match room {
@@ -74,7 +74,7 @@ fn show_room(conn: DbConn, id: i32) -> Option<Json<Room>> {
 
 // Return a playlist for a room
 #[get("/rooms/<id>/playlist")]
-fn get_playlist(conn: DbConn, id: i32) -> Result<Json<Playlist>, Failure>{
+fn get_playlist(conn: DbConn, id: i64) -> Result<Json<Playlist>, Failure>{
     let playlist = Playlist::get(&conn, id);
 
     match playlist {
@@ -89,7 +89,7 @@ fn get_playlist(conn: DbConn, id: i32) -> Result<Json<Playlist>, Failure>{
 
 // Add a song to a room
 #[post("/rooms/<room>", format = "application/json", data = "<id_list>")]
-fn add_video(api_key: State<ApiKey>, conn: DbConn, id_list: String, room: i32) -> Result<status::Created<Json<Vec<Video>>>, Failure> {
+fn add_video(api_key: State<ApiKey>, conn: DbConn, id_list: String, room: i64) -> Result<status::Created<Json<Vec<Video>>>, Failure> {
 
     let videos: Vec<String> = serde_json::from_str(&id_list).unwrap();
     let result = YoutubeVideo::get(&api_key.0.clone(), &conn, &videos, room);
@@ -123,7 +123,7 @@ fn add_room(conn: DbConn, room: Json<NewRoom>) -> Result<Json<Room>, Failure> {
 // TODO:
 // Create the picture when the room is created
 #[post("/rooms/<id>/picture", data = "<picture_stream>")]
-fn set_room_picture(id: i32, picture_stream: Data) -> Result<String, Failure> {
+fn set_room_picture(id: i64, picture_stream: Data) -> Result<String, Failure> {
     use establish_connection;
     let con = establish_connection();
 
@@ -178,7 +178,7 @@ fn set_room_picture(id: i32, picture_stream: Data) -> Result<String, Failure> {
 // this way, we could do NamedFile::open(Path::new(room.picture))
 // Because right now, we don't know if it's a jpg or png
 #[get("/rooms/<id>/picture")]
-fn get_room_picture(id: i32) -> Option<NamedFile> {
+fn get_room_picture(id: i64) -> Option<NamedFile> {
     let picture_url = format!("content/rooms/pictures/{}", id).to_string();
     NamedFile::open(Path::new(&picture_url)).ok()
 }
@@ -194,7 +194,7 @@ fn update_room(conn: DbConn, room: Json<Room>) -> Result<Json<Room>, Failure> {
 }
 
 #[delete("/rooms/<id>")]
-fn delete_room(conn: DbConn, id: i32) -> Result<Json<HttpStatus>, Failure> {
+fn delete_room(conn: DbConn, id: i64) -> Result<Json<HttpStatus>, Failure> {
     let result = Room::delete(&conn, id);
 
     match result {
@@ -212,7 +212,7 @@ fn delete_room(conn: DbConn, id: i32) -> Result<Json<HttpStatus>, Failure> {
 
 // Skip a song in a room
 #[post("/rooms/<id>/skip")]
-fn skip_song_in_room(id: i32) -> Json<HttpStatus> {
+fn skip_song_in_room(id: i64) -> Json<HttpStatus> {
 
     skip_video(&id);
 

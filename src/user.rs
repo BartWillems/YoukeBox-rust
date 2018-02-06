@@ -12,7 +12,7 @@ use schema::users;
 
 #[derive(Queryable, Identifiable)]
 pub struct User {
-    pub id: i32,
+    pub id: i64,
     pub username: String,
     pub password_hash: String,
     pub created_at: SystemTime,
@@ -85,7 +85,7 @@ impl User {
     }
 
     // Find & return a user by id
-    pub fn find(conn: &PgConnection, user_id: i32) -> Result<User, Failure> {
+    pub fn find(conn: &PgConnection, user_id: i64) -> Result<User, Failure> {
         use diesel::prelude::*;
         use schema::users::dsl::*;
 
