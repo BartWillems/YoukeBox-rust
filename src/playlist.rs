@@ -22,24 +22,24 @@ impl Playlist {
         let room = Room::find(conn, r_id);
 
         if room.is_none() {
-            return Err(Failure(Status::NotFound))
+            return Err(Failure(Status::NotFound));
         }
 
         let room = room.unwrap();
 
         let result = Video::belonging_to(&room)
-                    .filter(played.eq(false))
-                    .order(id)
-                    .load::<Video>(conn);
+            .filter(played.eq(false))
+            .order(id)
+            .load::<Video>(conn);
 
         match result {
             Ok(result) => {
                 let timestamp = get_timestamp(&result);
                 Ok(Playlist {
                     videos: result,
-                    timestamp
+                    timestamp,
                 })
-            },
+            }
             Err(e) => {
                 println!("Error while fetching the playlist: {}", e);
                 Err(Failure(Status::InternalServerError))
@@ -53,11 +53,11 @@ impl Playlist {
         use schema::videos::dsl::*;
 
         let result = Video::belonging_to(room)
-                    .filter(played.eq(false))
-                    .first::<Video>(conn);
+            .filter(played.eq(false))
+            .first::<Video>(conn);
 
         if result.is_ok() {
-            return false
+            return false;
         }
 
         true

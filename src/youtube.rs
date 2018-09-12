@@ -10,7 +10,7 @@ use std::io::Read;
 pub struct ApiKey(pub String);
 
 #[derive(FromForm)]
-pub struct YoutubeQuery{
+pub struct YoutubeQuery {
     pub query: String,
 }
 
@@ -134,7 +134,8 @@ impl YoutubeVideo {
             "{}/search?type=video&part=id,snippet&maxResults=20&key={}&q={}&videoCategoryId=10",
             *super::API_URL,
             api_key,
-            query);
+            query
+        );
         let resp = reqwest::get(&url);
 
         match resp {
@@ -142,8 +143,8 @@ impl YoutubeVideo {
                 let mut content = String::new();
                 resp.read_to_string(&mut content).unwrap();
                 YoutubeVideo::get_video_durations(api_key, Some(&content))
-            },
-            Err(_)  => Err(Failure(Status::InternalServerError)),
+            }
+            Err(_) => Err(Failure(Status::InternalServerError)),
         }
     }
 
@@ -158,8 +159,8 @@ impl YoutubeVideo {
         match json_videos {
             Some(json_videos) => {
                 videos = Some(json_videos).unwrap();
-            },
-            None => return Err(Failure(Status::InternalServerError))
+            }
+            None => return Err(Failure(Status::InternalServerError)),
         }
 
         let result = serde_json::from_str(videos);
@@ -167,9 +168,8 @@ impl YoutubeVideo {
 
         match result {
             Ok(result) => videos = result,
-            Err(_) => return Err(Failure(Status::InternalServerError))
+            Err(_) => return Err(Failure(Status::InternalServerError)),
         }
-
 
         for youtube_video in &videos.items {
             url = format!("{},{}", url, youtube_video.id.videoId);
@@ -183,14 +183,19 @@ impl YoutubeVideo {
                 let mut content = String::new();
                 resp.read_to_string(&mut content).unwrap();
                 Ok(content)
-            },
-            Err(_)  => Err(Failure(Status::InternalServerError)),
+            }
+            Err(_) => Err(Failure(Status::InternalServerError)),
         }
     }
     // Takes a string of youtube video id's seperated by a comma
     // eg: ssxNqBPRL6Y,_wy4tuFEpz0,...
     // Those videos will be searched on youtube and added to the videos db table
-    pub fn get(api_key: &str, conn: &PgConnection, video_id: &[String], room_id: i64) -> Result<Vec<Video>, Failure> {
+    pub fn get(
+        api_key: &str,
+        conn: &PgConnection,
+        video_id: &[String],
+        room_id: i64,
+    ) -> Result<Vec<Video>, Failure> {
         use schema::videos;
         use reqwest;
         use serde_json;
@@ -222,8 +227,8 @@ impl YoutubeVideo {
         match resp {
             Ok(mut resp) => {
                 resp.read_to_string(&mut content).unwrap();
-            },
-            Err(_) => return Err(Failure(Status::InternalServerError))
+            }
+            Err(_) => return Err(Failure(Status::InternalServerError)),
         }
 
         let result: YoutubeVideosDetailed = serde_json::from_str(&content).unwrap();
@@ -242,14 +247,14 @@ impl YoutubeVideo {
         }
 
         let result = diesel::insert_into(videos::table)
-                        .values(&videos)
-                        .get_results(conn);
+            .values(&videos)
+            .get_results(conn);
 
         match result {
             Ok(result) => {
                 player::start_playing(room);
                 Ok(result)
-            },
+            }
             Err(e) => {
                 println!("{}", e);
                 Err(Failure(Status::InternalServerError))

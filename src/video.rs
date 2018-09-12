@@ -3,8 +3,7 @@ use room::Room;
 use std::time::SystemTime;
 
 // Nullable SQL types should be an Option struct
-#[derive(Serialize, Deserialize)]
-#[derive(Queryable, Identifiable, Associations)]
+#[derive(Serialize, Deserialize, Queryable, Identifiable, Associations)]
 #[belongs_to(Room)]
 pub struct Video {
     pub id: i64,
@@ -18,9 +17,8 @@ pub struct Video {
     pub started_on: Option<SystemTime>,
 }
 
-#[derive(Insertable)]
-#[derive(Serialize)]
-#[table_name="videos"]
+#[derive(Insertable, Serialize)]
+#[table_name = "videos"]
 pub struct NewVideo {
     pub video_id: String,
     pub title: String,

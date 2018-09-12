@@ -6,9 +6,7 @@ use rocket::response::Failure;
 use super::schema::rooms;
 use player::play_video_thread;
 
-#[derive(Clone)]
-#[derive(Serialize, Deserialize)]
-#[derive(Queryable, Identifiable)]
+#[derive(Clone, Serialize, Deserialize, Queryable, Identifiable)]
 pub struct Room {
     pub id: i64,
     pub name: String,
@@ -16,9 +14,8 @@ pub struct Room {
     pub is_public: bool,
 }
 
-#[derive(Insertable)]
-#[derive(Deserialize)]
-#[table_name="rooms"]
+#[derive(Insertable, Deserialize)]
+#[table_name = "rooms"]
 pub struct NewRoom {
     pub name: String,
     pub description: Option<String>,
@@ -45,19 +42,16 @@ impl Room {
         }
 
         // I add the type here because othwerise the clone() doesn't know which type it is.
-        let created_room: Result<Room, Error>
-                = diesel::insert_into(rooms::table)
-                    .values(&new_room)
-                    .get_result(conn);
+        let created_room: Result<Room, Error> = diesel::insert_into(rooms::table)
+            .values(&new_room)
+            .get_result(conn);
 
         match created_room {
             Ok(room) => {
                 play_video_thread(room.clone());
                 Ok(room)
-            },
-            Err(_) => {
-                Err(Failure(Status::Conflict))
             }
+            Err(_) => Err(Failure(Status::Conflict)),
         }
     }
 
@@ -73,16 +67,16 @@ impl Room {
         }
 
         let result = diesel::update(rooms)
-                    .set((
-                        description.eq(room.description.clone()),
-                        name.eq(room.name.clone()),
-                        is_public.eq(room.is_public),
-                    ))
-                    .get_result(conn);
+            .set((
+                description.eq(room.description.clone()),
+                name.eq(room.name.clone()),
+                is_public.eq(room.is_public),
+            ))
+            .get_result(conn);
 
         match result {
             Ok(updated_room) => Ok(updated_room),
-            Err(_) => Err(Failure(Status::Conflict))
+            Err(_) => Err(Failure(Status::Conflict)),
         }
     }
 
@@ -92,11 +86,10 @@ impl Room {
         use schema::rooms::dsl::*;
         use std::fs;
 
-        let result = diesel::delete(rooms.filter(id.eq(room_id)))
-                        .execute(conn);
+        let result = diesel::delete(rooms.filter(id.eq(room_id))).execute(conn);
 
         if result.is_err() {
-            return Err(Failure(Status::InternalServerError))
+            return Err(Failure(Status::InternalServerError));
         }
 
         let picture_url = format!("{}/{}", *super::PICTURES_DIR, room_id).to_string();
@@ -115,12 +108,8 @@ impl Room {
         let result = rooms.filter(id.eq(room_id)).first::<Room>(conn);
 
         match result {
-            Ok(result) => {
-                Some(result)
-            },
-            Err(_e) => {
-                None
-            }
+            Ok(result) => Some(result),
+            Err(_e) => None,
         }
     }
 
@@ -134,21 +123,18 @@ impl Room {
 
         match query {
             Some(query) => {
-                result = rooms.filter(
-                            name.ilike(format!("%{}%", query.to_lowercase()))
-                        )
-                        .order(name.desc())
-                        .load::<Room>(conn);
-            },
+                result = rooms
+                    .filter(name.ilike(format!("%{}%", query.to_lowercase())))
+                    .order(name.desc())
+                    .load::<Room>(conn);
+            }
             None => {
                 result = rooms.order(id.asc()).load::<Room>(conn);
             }
         }
 
         match result {
-            Ok(result) => {
-                Ok(result)
-            },
+            Ok(result) => Ok(result),
             Err(e) => {
                 println!("Error while fetching the rooms: {}", e);
                 Err(Failure(Status::InternalServerError))

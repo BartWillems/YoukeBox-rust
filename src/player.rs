@@ -25,9 +25,9 @@ pub fn play_current_video(conn: &PgConnection, room: &Room) -> bool {
     use self::schema::videos::dsl::*;
 
     let video = Video::belonging_to(room)
-                    .filter(played.eq(false))
-                    .order(id)
-                    .first::<Video>(conn);
+        .filter(played.eq(false))
+        .order(id)
+        .first::<Video>(conn);
 
     match video {
         Ok(video) => {
@@ -38,13 +38,15 @@ pub fn play_current_video(conn: &PgConnection, room: &Room) -> bool {
                 .execute(conn)
                 .expect("Unable to start playing the current video.");
 
-            println!("Start playing: [{}] With ID: [{}] and duration: [{}] in room: [{}].",
-                &video.title,
-                &video.id,
-                &video.duration,
-                &room.name);
+            println!(
+                "Start playing: [{}] With ID: [{}] and duration: [{}] in room: [{}].",
+                &video.title, &video.id, &video.duration, &room.name
+            );
 
-            PLAYLIST_THREADS.lock().unwrap().insert(room.id, VideoStatus::Play);
+            PLAYLIST_THREADS
+                .lock()
+                .unwrap()
+                .insert(room.id, VideoStatus::Play);
 
             let now = SystemTime::now();
             let mut playing: bool = true;
@@ -53,14 +55,16 @@ pub fn play_current_video(conn: &PgConnection, room: &Room) -> bool {
             // Playing will be set to false if either the timer has run out
             // Or when someone skips the song by setting the PLAYLIST_THREADS[ROOM_NAME] to something other than "play"
             while playing {
-
                 // Check if someone tried to skip the video
                 match PLAYLIST_THREADS.lock().unwrap().get(&room.id) {
                     Some(status) => {
                         playing = handle_video_event(status);
-                    },
+                    }
                     None => {
-                        PLAYLIST_THREADS.lock().unwrap().insert(room.id, VideoStatus::Play);
+                        PLAYLIST_THREADS
+                            .lock()
+                            .unwrap()
+                            .insert(room.id, VideoStatus::Play);
                     }
                 }
 
@@ -70,7 +74,7 @@ pub fn play_current_video(conn: &PgConnection, room: &Room) -> bool {
                         if elapsed.as_secs() >= video_duration.as_secs() {
                             playing = false;
                         }
-                    },
+                    }
                     Err(e) => {
                         playing = false;
                         println!("SystemTime elapsed error: {}", e);
@@ -89,21 +93,20 @@ pub fn play_current_video(conn: &PgConnection, room: &Room) -> bool {
                 .expect("Unable to mark the current video as played.");
 
             true
-        },
+        }
         Err(_) => {
             stop_playing(room);
             false
-        },
+        }
     }
 }
 
 fn handle_video_event(status: &VideoStatus) -> bool {
     match *status {
         VideoStatus::Play => true,
-        VideoStatus::Skip => false
+        VideoStatus::Skip => false,
     }
 }
-
 
 /// Start a thread to watch a certain playlist
 pub fn play_video_thread(room: Room) {
@@ -114,15 +117,14 @@ pub fn play_video_thread(room: Room) {
             loop {
                 play_current_video(&c, &room);
 
-                if ! PLAYLIST_THREADS.lock().unwrap().contains_key(&room.id) {
-                    println!("Stop playin thread with id: {}", room.id );
+                if !PLAYLIST_THREADS.lock().unwrap().contains_key(&room.id) {
+                    println!("Stop playin thread with id: {}", room.id);
                     break;
                 }
             }
         })
         .unwrap();
 }
-
 
 // Loop through every room & start playing their playlists IF the playlist isn't empty.
 // At the end of the loop, start the FFA playlist(room None)
@@ -133,8 +135,7 @@ pub fn init_playlist_listener() {
 
     let conn: PgConnection = establish_connection();
 
-    let result = rooms.load::<Room>(&conn)
-                .expect("Error loading videos");
+    let result = rooms.load::<Room>(&conn).expect("Error loading videos");
 
     for room in result {
         if Playlist::is_empty(&conn, &room) {
@@ -147,7 +148,7 @@ pub fn init_playlist_listener() {
 pub fn start_playing(room: Room) {
     let mut hashmap = PLAYLIST_THREADS.lock().unwrap();
 
-    if ! hashmap.contains_key(&room.id) {
+    if !hashmap.contains_key(&room.id) {
         hashmap.insert(room.id, VideoStatus::Play);
         play_video_thread(room);
     }
@@ -165,7 +166,7 @@ pub fn duration_to_seconds(duration: &str) -> u64 {
     let mut total: i32 = 0;
 
     for i in (0..v.len()).rev() {
-        if ! v[i].is_empty() {
+        if !v[i].is_empty() {
             total += v[i].parse::<i32>().unwrap() * (60i32.pow(index));
             index += 1;
         }
@@ -173,7 +174,6 @@ pub fn duration_to_seconds(duration: &str) -> u64 {
 
     total as u64
 }
-
 
 pub fn skip_video(room: &i64) {
     let mut rooms = PLAYLIST_THREADS.lock().unwrap();

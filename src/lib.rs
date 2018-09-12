@@ -1,12 +1,14 @@
 #![feature(plugin, custom_derive)]
 #![plugin(rocket_codegen)]
 #![plugin(dotenv_macros)]
+#![recursion_limit = "128"]
 
-#![recursion_limit="128"]
-
-#[macro_use] extern crate diesel;
-#[macro_use] extern crate serde_derive;
-#[macro_use] extern crate lazy_static;
+#[macro_use]
+extern crate diesel;
+#[macro_use]
+extern crate lazy_static;
+#[macro_use]
+extern crate serde_derive;
 
 extern crate rocket_contrib;
 extern crate rocket_cors;
@@ -17,10 +19,10 @@ extern crate dotenv;
 extern crate image;
 extern crate r2d2;
 extern crate r2d2_diesel;
-extern crate rocket;
-extern crate serde_json;
 extern crate regex;
 extern crate reqwest;
+extern crate rocket;
+extern crate serde_json;
 
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
@@ -30,7 +32,7 @@ use r2d2_diesel::ConnectionManager;
 use std::ops::Deref;
 use rocket::http::Status;
 use rocket::request::{self, FromRequest};
-use rocket::{Request, State, Outcome};
+use rocket::{Outcome, Request, State};
 use diesel::sql_types;
 
 pub mod schema;
@@ -60,7 +62,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for DbConn {
         let pool = request.guard::<State<Pool>>()?;
         match pool.get() {
             Ok(conn) => Outcome::Success(DbConn(conn)),
-            Err(_) => Outcome::Failure((Status::ServiceUnavailable, ()))
+            Err(_) => Outcome::Failure((Status::ServiceUnavailable, ())),
         }
     }
 }
@@ -76,11 +78,9 @@ impl Deref for DbConn {
 pub fn establish_connection() -> PgConnection {
     dotenv().ok();
 
-    let database_url = env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set");
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
-    PgConnection::establish(&database_url)
-        .expect(&format!("Error connecting to {}", database_url))
+    PgConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url))
 }
 
 type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
@@ -92,5 +92,7 @@ pub fn init_pool() -> Pool {
         .expect("DATABASE_URL must be set, please ensure the '.env' file exists.");
 
     let manager = ConnectionManager::<PgConnection>::new(database_url);
-    r2d2::Pool::builder().build(manager).expect("Failed to creat db pool")
+    r2d2::Pool::builder()
+        .build(manager)
+        .expect("Failed to creat db pool")
 }
